@@ -1,0 +1,29 @@
+/***** BACKUP FILE NOT IN USE ******
+
+import { CoralogixLogger, Log, LoggerConfig } from 'coralogix-logger';
+
+export function coralogixLog(appName: string) {
+
+  CoralogixLogger.configure(new LoggerConfig({
+    applicationName: process.env.NODE_ENV,
+    privateKey: process.env.CORALOGIX_APIKEY,
+    subsystemName: process.env.APP_NAME
+  }));
+
+  const coralogix = new CoralogixLogger(appName);
+
+  // tslint:disable-next-line: no-any
+  return (level: number, ...params: Array<any>) => {
+
+    // format the params to a string
+    let text = '';
+    params.forEach(elem => text += `${elem} `);
+    text = text.trim();
+
+    coralogix.addLog(new Log({
+      severity: level, className: '', methodName: '', text
+    }));
+  };
+}
+
+*****/

@@ -1,0 +1,14 @@
+{
+  "spec_files": [
+    "**/*[sS]pec.ts",
+    "src/**/*.test.ts",
+    "!src/**/index.ts"
+  ],
+  "helpers": [
+    "helpers/**/*.ts"
+  ],
+  "stopSpecOnExpectationFailure": false,
+  "random": false,
+  "report-dir": "./coverage",
+  "reporter": "lcov"
+}
