@@ -13,22 +13,22 @@ export { appendError }; // make it easy for other to log errors on the chain
 
 export function setupKoa(app: Koa, router: joiRouter.Router, rootFolder: string) {
 
-    // set app midleware
-    app.use(errorChainHandler)
-        .use(responseTimeHandler)
-        .use(cors());
+  // set app midleware
+  app.use(errorChainHandler)
+    .use(responseTimeHandler)
+    .use(cors());
 
-    if (getCounters().production) {
-        app.use(compress());
-    }
+  if (getCounters().production) {
+    app.use(compress());
+  }
 
-    app.use(userAgent) // addes ctx.userAgent
-        .use(bodyParser())
-        .use(staticSiteBuilder(rootFolder, '/'))
-        .use(router.middleware());
+  app.use(userAgent) // addes ctx.userAgent
+    .use(bodyParser())
+    .use(staticSiteBuilder(rootFolder, '/'))
+    .use(router.middleware());
 
-    app.on('error', koaOnError);
-    return app;
+  app.on('error', koaOnError);
+  return app;
 }
 
 /***

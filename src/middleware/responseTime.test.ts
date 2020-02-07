@@ -1,4 +1,4 @@
-// tslint:disable-next-line: no-import-side-effect no-implicit-dependencies
+
 import 'jasmine';
 import * as Koa from 'koa';
 import { sleep } from '../utils';
@@ -20,7 +20,7 @@ describe('responseTime middleware tests', () => {
     const ctx: Partial<Koa.Context> = {
       status: 0,
       body: '',
-      // tslint:disable-next-line: no-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       set: setFn as any
     };
 

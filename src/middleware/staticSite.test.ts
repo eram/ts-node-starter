@@ -1,4 +1,4 @@
-// tslint:disable-next-line: no-import-side-effect no-implicit-dependencies
+
 import 'jasmine';
 import * as Koa from 'koa';
 import { staticSiteBuilder } from './staticSite';

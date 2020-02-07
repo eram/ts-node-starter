@@ -1,8 +1,5 @@
-import { debuglog } from 'util';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /*** import { coralogixLog } from './coralogix'; ***/
-
-// tslint:disable: no-any
-
 // this num must needs to match with CoralogixLogger.Severity
 export enum LogLevel {debug = 1, trace = 2, info = 3,  warn = 4, error = 5, critical = 6}
 
@@ -77,7 +74,7 @@ class Logger {
 
   assert(cond: boolean, ...params: Array<any>) {
     if (!(cond)) {
-      if (!!process.env.DEBUG) {
+      if (process.env.DEBUG) {
         throw new Error('[ASSERTION FAILED]');
       }
       this.logger(LogLevel.critical, '[ASSERTION FAILED]', ...params);
@@ -94,7 +91,7 @@ export function getLogger(logName = '', level = LogLevel.warn) {
     logger = new Logger(`${logName || process.env.APP_NAME || 'unknown'}`, level);
   }
 
-  return (!!logName) ? new Logger(`${logName}`, level) : logger;
+  return (logName) ? new Logger(`${logName}`, level) : logger;
 }
 
 // shorthands to global logger

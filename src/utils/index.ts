@@ -3,6 +3,6 @@ export * from './logger';
 export * from './config';
 export * from './processOn';
 
-// tslint:disable-next-line: no-any
-export interface IndexSig { [key: string]: any; }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export interface IndexSig { [key: string]: any }
 export const sleep = async (ms: number) => new Promise(resolve => setTimeout(resolve, ms));

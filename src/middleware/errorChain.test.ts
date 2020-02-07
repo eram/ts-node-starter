@@ -1,6 +1,5 @@
-import createError from 'http-errors';
-// tslint:disable-next-line: no-import-side-effect no-implicit-dependencies
 import 'jasmine';
+import createError from 'http-errors';
 import * as Koa from 'koa';
 import { getCounters } from '../counters';
 import { errorChainHandler, koaOnError } from './errorChain';
