@@ -96,6 +96,7 @@ export function getLogger(logName = '', level = LogLevel.warn) {
 
 // shorthands to global logger
 export const trace = (...params: Array<any>) => { getLogger().trace(...params); };
+export const debug = (...params: Array<any>) => { getLogger().debug(...params); };
 export const info = (...params: Array<any>) => { getLogger().info(...params); };
 export const warn = (...params: Array<any>) => { getLogger().warn(...params); };
 export const error = (...params: Array<any>) => { getLogger().error(...params); };

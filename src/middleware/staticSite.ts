@@ -10,12 +10,12 @@ import { trace } from '../utils';
 
 export function staticSiteBuilder(folder: string, mountPoint: string) {
 
-  const f = resolve(folder);
-  if (!fs.existsSync(f)) {
+  const fn = resolve(folder);
+  if (!fs.existsSync(fn)) {
     throw new Error(`staticSiteBuilder: folder '${folder}' not found.`);
   }
 
-  const srv = serve(f, {defer: false, gzip: false});
+  const srv = serve(fn, {defer: false, gzip: false});
   const mnt = mount(mountPoint, srv);
 
   return async function(ctx: Koa.Context, next: () => Promise<void>) {

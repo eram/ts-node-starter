@@ -40,7 +40,24 @@
             "request": "launch",
             "args": [
                 "node_modules/jasmine/bin/jasmine",
-                "--config=config/jasmine.json",
+                "--config=./jasmine.json",
+                "${relativeFile}"
+            ],
+            "runtimeArgs": ["--nolazy", "-r","ts-node/register"],
+            "sourceMaps": true,
+            "cwd": "${workspaceRoot}",
+            "protocol": "inspector",
+            "skipFiles": [
+                "<node_internals>/**"
+            ]
+        },
+        {
+            "name": "Jasmine-ts current file",
+            "type": "node",
+            "request": "launch",
+            "args": [
+                "node_modules/jasmine-ts/lib/index.js",
+                "--config=./jasmine.json",
                 "${relativeFile}"
             ],
             "runtimeArgs": ["--nolazy", "-r","ts-node/register"],

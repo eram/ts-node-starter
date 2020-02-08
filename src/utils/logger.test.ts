@@ -11,7 +11,7 @@ describe('logger tests', () => {
 
   it('check all types of log levels', () => {
     logger.getLogger().setLevel(logger.LogLevel.debug);
-    [logger.trace, logger.info, logger.warn, logger.error, logger.critical, logger.assert].forEach(fn => {
+    [logger.trace, logger.debug, logger.info, logger.warn, logger.error, logger.critical, logger.assert].forEach(fn => {
       expect(typeof fn).toBe('function');
       fn('check');
     });

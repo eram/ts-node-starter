@@ -33,6 +33,7 @@ describe('errorChain middleware tests', () => {
 
     expect(getCounters().errors).toEqual(errors + 1);
     expect(typeof ctx.state.errorChain).toEqual('object');
+    expect(typeof ctx.state.errorChain.length).toBeDefined();
     const arr = ctx.state.errorChain as Array<string>;
     expect(arr.length).toEqual(1);
   });

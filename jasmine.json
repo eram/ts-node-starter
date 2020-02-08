@@ -9,6 +9,12 @@
   ],
   "stopSpecOnExpectationFailure": false,
   "random": false,
-  "report-dir": "./coverage",
-  "reporter": "lcov"
+  "reporters": [
+    {
+      "name": "jasmine-spec-reporter#SpecReporter",
+      "options": {
+        "displayStacktrace": "all"
+      }
+    }
+  ]
 }
