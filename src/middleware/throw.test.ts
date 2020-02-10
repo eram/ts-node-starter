@@ -1,7 +1,12 @@
 
 import 'jasmine';
 import * as Koa from 'koa';
-import { throwHandler } from './throw';
+import {throwHandler} from './throw';
+
+
+afterAll(()=>{
+  console.log('throw.test done');
+});
 
 describe('throw middleware tests', () => {
 
@@ -13,7 +18,7 @@ describe('throw middleware tests', () => {
     let thrown = false;
 
     try {
-      await throwHandler(ctx as Koa.Context, () => Promise.resolve());
+      await throwHandler(ctx as Koa.Context, async () => Promise.resolve());
     } catch (err) {
       thrown = true;
     }

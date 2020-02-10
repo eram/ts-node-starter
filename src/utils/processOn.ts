@@ -3,14 +3,12 @@
 // testing signals is out of scope for istanbul runner.
 // see note in processOn.test.ts
 import * as Http from 'http';
-import { error, info } from './';
+import {error, info} from './';
 
 export class ProcCounters {
   reloads = 0;
   messages = 0;
   errors = 0;
-  requestsInPorgress = 0;
-  requests = 0;
 }
 
 export class ProcHandlers {
@@ -21,11 +19,11 @@ export class ProcHandlers {
 
 export function setProcHandlers(hands: ProcHandlers) {
 
-  ['SIGINT', 'SIGTERM', 'exit'].forEach(sig => {
+  ['SIGINT', 'exit'].forEach(sig => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     process.on(sig as any, (signal: string) => {
 
-      info(`Recieved ${signal}`);
+      info(`Recieved ${sig}: ${signal}`);
       if (!hands.terminating) {
         hands.terminating = true;
         if (hands.server) {
@@ -35,9 +33,17 @@ export function setProcHandlers(hands: ProcHandlers) {
           });
         }
         setTimeout(() => {
-          process.exit(!hands.server || !hands.server.listening ? 0 : 1);
-        }, 500);
-      }});
+          const rc = (!hands.server || !hands.server.listening) ? 0 : 1;
+          process.exit(rc);
+        }, 1500);
+      }
+    });
+  });
+
+  process.on('SIGTERM', () => {
+    info('Recieved SIGTERM');
+    hands.terminating = true;
+    process.exit(0);
   });
 
   process.on('SIGHUP', () => {
@@ -46,16 +52,11 @@ export function setProcHandlers(hands: ProcHandlers) {
     hands.counters.reloads++;
   });
 
-  process.on('message', msg => {
-    // message from pm2
-    info(`Recieved message ${msg}`);
-    hands.counters.messages++;
-  });
 
   ['unhandledRejection', 'uncaughtException'].forEach(sig => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     process.on(sig as any, (err: Error) => {
-      error(err);
+      error(`Recieved ${sig}:`, err);
       hands.counters.errors++;
       throw err;
     });
@@ -66,7 +67,22 @@ export function setProcHandlers(hands: ProcHandlers) {
   ['SIGUSR2', 'SIGVTALRM', 'SIGBREAK', 'SIGLOST', 'SIGINFO'].forEach(sig => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     process.on(sig as any, (signal: string) => {
-      info(`Recieved ${signal}`);
+      info(`Recieved ${sig}: ${signal}`);
     });
+  });
+
+  // handle messages from PM2
+  process.on('message', msg => {
+
+    info(`Recieved message: ${msg}`);
+    hands.counters.messages++;
+
+    switch (msg) {
+      case 'shutdown':
+        process.emit('SIGINT', 'SIGINT');
+        break;
+
+      default:
+    }
   });
 }

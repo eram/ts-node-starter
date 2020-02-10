@@ -1,5 +1,8 @@
-import { sleep } from '.';
-import { ProcCounters, ProcHandlers, setProcHandlers } from './processOn';
+import 'jasmine';
+
+afterAll(() => {
+  console.log('processOn.test done');
+});
 
 //
 // NOTE!
@@ -7,6 +10,9 @@ import { ProcCounters, ProcHandlers, setProcHandlers } from './processOn';
 // you can run it as a single file test - uncomment the below.
 //
 /*
+import { sleep } from '.';
+import { ProcCounters, ProcHandlers, setProcHandlers } from './processOn';
+
 describe('processOn testing', () => {
 
     const counters = new ProcCounters();

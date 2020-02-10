@@ -1,5 +1,11 @@
 import * as Koa from 'koa';
-import { sleep } from '../utils';
+import {sleep} from '../utils';
+
+export const i = ['111', 1];
+
+export interface IHhalom {
+  str: number;
+}
 
 async function _healthcheck() {
 
@@ -18,7 +24,7 @@ async function _healthcheck() {
 
 export async function healthcheckHandler(ctx: Koa.Context): Promise<void> {
 
-  const { ok, msg } = await _healthcheck();
+  const {ok, msg} = await _healthcheck();
 
   ctx.status = 200;
   ctx.set('Cache-Control', 'no-cache');

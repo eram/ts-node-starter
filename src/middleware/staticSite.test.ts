@@ -1,7 +1,10 @@
-
 import 'jasmine';
 import * as Koa from 'koa';
-import { staticSiteBuilder } from './staticSite';
+import {staticSiteBuilder} from './staticSite';
+
+afterAll(() => {
+  console.log('staticSite.test done');
+});
 
 describe('static-site middleware tests', () => {
 
@@ -9,6 +12,19 @@ describe('static-site middleware tests', () => {
 
     const fn = staticSiteBuilder('./public', '/');
     expect(typeof fn).toEqual('function');
+  });
+
+  it('throws on invalid folder', () => {
+
+    let thrown = false;
+
+    try {
+      staticSiteBuilder('./test123', '/');
+    } catch (err) {
+      thrown = true;
+    }
+
+    expect(thrown).toBeTrue();
   });
 
   it('middleware responds', async () => {
@@ -24,7 +40,7 @@ describe('static-site middleware tests', () => {
     let thrown = false;
 
     try {
-      await fn(ctx as Koa.Context, () => Promise.resolve());
+      await fn(ctx as Koa.Context, async () => Promise.resolve());
     } catch (err) {
       thrown = true;
     }

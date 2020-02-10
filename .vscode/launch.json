@@ -4,6 +4,7 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+
         {
             "name": "Debug current ts file",
             "type": "node",
@@ -52,13 +53,12 @@
             ]
         },
         {
-            "name": "Jasmine-ts current file",
+            "name": "Test app",
             "type": "node",
             "request": "launch",
             "args": [
-                "node_modules/jasmine-ts/lib/index.js",
-                "--config=./jasmine.json",
-                "${relativeFile}"
+                "node_modules/jasmine/bin/jasmine",
+                "--config=./jasmine.json"
             ],
             "runtimeArgs": ["--nolazy", "-r","ts-node/register"],
             "sourceMaps": true,

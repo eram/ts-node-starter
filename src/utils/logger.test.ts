@@ -1,6 +1,13 @@
-
 import 'jasmine';
 import * as logger from './logger';
+
+beforeAll(() => {
+  process.env.LOG_ADD_TIME = 'true';
+});
+
+afterAll(() => {
+  console.log('logger.test done');
+});
 
 describe('logger tests', () => {
 
@@ -28,6 +35,15 @@ describe('logger tests', () => {
       logger.getLogger().assert(false);
     }).not.toThrow();
     process.env.DEBUG = save;
+  });
+
+  it('logs thru logger interface', () => {
+
+    //let called = 0;
+    const logFn = jasmine.createSpy('logFn', () => { /* */ });
+    const log = logger.getLogger('logFn', logger.LogLevel.critical, logFn);
+    log.critical('test');
+    expect(logFn).toHaveBeenCalledTimes(1);
   });
 
 });

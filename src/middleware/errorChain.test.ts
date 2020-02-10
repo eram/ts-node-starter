@@ -1,8 +1,12 @@
 import 'jasmine';
 import createError from 'http-errors';
 import * as Koa from 'koa';
-import { getCounters } from '../counters';
-import { errorChainHandler, koaOnError } from './errorChain';
+import {getCounters} from '../counters';
+import {errorChainHandler, koaOnError} from './errorChain';
+
+afterAll(()=>{
+  console.log('errorChain.test done');
+});
 
 describe('errorChain middleware tests', () => {
 
@@ -34,7 +38,7 @@ describe('errorChain middleware tests', () => {
     expect(getCounters().errors).toEqual(errors + 1);
     expect(typeof ctx.state.errorChain).toEqual('object');
     expect(typeof ctx.state.errorChain.length).toBeDefined();
-    const arr = ctx.state.errorChain as Array<string>;
+    const arr = ctx.state.errorChain as string[];
     expect(arr.length).toEqual(1);
   });
 
@@ -49,15 +53,15 @@ describe('errorChain middleware tests', () => {
     };
 
     await errorChainHandler(ctx as Koa.Context, async () => {
-      const err = createError(501, 'test');
-      throw err;
+      await Promise.resolve(); // stop complaining
+      throw createError(503, 'test');
     });
 
     expect(getCounters().errors).toEqual(errors + 1);
-    expect(ctx.status).toEqual(501);
+    expect(ctx.status).toEqual(503);
     expect(ctx.message).toEqual('test');
     expect(typeof ctx.state.errorChain).toEqual('object');
-    const arr = ctx.state.errorChain as Array<string>;
+    const arr = ctx.state.errorChain as string[];
     expect(arr.length).toEqual(1);
     expect(arr[0].length).toBeGreaterThan(100);
   });

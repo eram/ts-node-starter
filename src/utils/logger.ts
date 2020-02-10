@@ -1,13 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/*** import { coralogixLog } from './coralogix'; ***/
-// this num must needs to match with CoralogixLogger.Severity
-export enum LogLevel {debug = 1, trace = 2, info = 3,  warn = 4, error = 5, critical = 6}
+/* import { coralogixLog } from './coralogix'; */
+// this enum must match with CoralogixLogger.Severity
+export enum LogLevel { debug = 1, trace = 2, info = 3, warn = 4, error = 5, critical = 6 }
+export type ILogFn = (level: LogLevel, ...params: any[]) => void;
 
-function consoleLogger(appName: string) {
+function consoleLogger(_ctx: string) {
 
-  return (level: LogLevel, ...params: Array<any>) => {
+  const addTime = (process.env.LOG_ADD_TIME && process.env.LOG_ADD_TIME !== 'false');
+  const ctx = (_ctx && _ctx.length)? `[${_ctx}]` : '';
 
-    let lvl = `[${appName}]`;
+  return (level: LogLevel, ...params: any[]) => {
+
+    let prefix = addTime? `${(new Date()).toISOString() + ' ' + ctx}` : ctx;
     let logger = console.error;
     switch (level) {
       case LogLevel.debug: logger = console.debug; break;
@@ -15,19 +19,19 @@ function consoleLogger(appName: string) {
       case LogLevel.info: logger = console.info; break;
       case LogLevel.warn: logger = console.warn; break;
       case LogLevel.error: break;
-      default: lvl = '[CRITICAL]';
+      default: prefix = '[CRITICAL]';
     }
 
-    logger(lvl, ...params);
+    logger(prefix, ...params);
   };
 }
 
 class Logger {
 
-  private readonly logger: (level: LogLevel, ...params: Array<any>) => void;
+  private readonly logger: (level: LogLevel, ...params: any[]) => void;
 
-  constructor(module: string, private level = LogLevel.trace) {
-    this.logger = /*** (process.env.CORALOGIX_APIKEY) ? coralogixLog(module) : ***/ consoleLogger(module);
+  constructor(module: string, private level: LogLevel, logger: ILogFn = undefined) {
+    this.logger = logger || consoleLogger(module);
   }
 
   setLevel(level: LogLevel): LogLevel {
@@ -36,43 +40,43 @@ class Logger {
     return lvl;
   }
 
-  debug(...params: Array<any>) {
+  debug(...params: any[]) {
     if (this.level <= LogLevel.debug) {
       this.logger(LogLevel.debug, ...params);
     }
   }
 
-  trace(...params: Array<any>) {
+  trace(...params: any[]) {
     if (this.level <= LogLevel.trace) {
       this.logger(LogLevel.trace, ...params);
     }
   }
 
-  info(...params: Array<any>) {
+  info(...params: any[]) {
     if (this.level <= LogLevel.info) {
       this.logger(LogLevel.info, ...params);
     }
   }
 
-  warn(...params: Array<any>) {
+  warn(...params: any[]) {
     if (this.level <= LogLevel.warn) {
       this.logger(LogLevel.warn, ...params);
     }
   }
 
-  error(...params: Array<any>) {
+  error(...params: any[]) {
     if (this.level <= LogLevel.error) {
       this.logger(LogLevel.error, ...params);
     }
   }
 
-  critical(...params: Array<any>) {
+  critical(...params: any[]) {
     if (this.level <= LogLevel.critical) {
       this.logger(LogLevel.critical, ...params);
     }
   }
 
-  assert(cond: boolean, ...params: Array<any>) {
+  assert(cond: boolean, ...params: any[]) {
     if (!(cond)) {
       if (process.env.DEBUG) {
         throw new Error('[ASSERTION FAILED]');
@@ -82,23 +86,23 @@ class Logger {
   }
 }
 
-// global logger is initialized on first call to getLogger()
-let logger: Logger;
+const logmap = new Map<string, Logger>();
 
-export function getLogger(logName = '', level = LogLevel.warn) {
+export function getLogger(logName = '', level = LogLevel.warn, logger: ILogFn = undefined) {
 
-  if (!logger) {
-    logger = new Logger(`${logName || process.env.APP_NAME || 'unknown'}`, level);
+  let log = logmap.get(logName);
+  if (!log) {
+    log = new Logger(logName, level, logger);
+    logmap.set(logName, log);
   }
-
-  return (logName) ? new Logger(`${logName}`, level) : logger;
+  return log;
 }
 
 // shorthands to global logger
-export const trace = (...params: Array<any>) => { getLogger().trace(...params); };
-export const debug = (...params: Array<any>) => { getLogger().debug(...params); };
-export const info = (...params: Array<any>) => { getLogger().info(...params); };
-export const warn = (...params: Array<any>) => { getLogger().warn(...params); };
-export const error = (...params: Array<any>) => { getLogger().error(...params); };
-export const critical = (...params: Array<any>) => { getLogger().critical(...params); };
-export const assert = (cond: boolean, ...params: Array<any>) => { getLogger().assert(cond, ...params); };
+export const trace = (...params: any[]) => { getLogger().trace(...params); };
+export const debug = (...params: any[]) => { getLogger().debug(...params); };
+export const info = (...params: any[]) => { getLogger().info(...params); };
+export const warn = (...params: any[]) => { getLogger().warn(...params); };
+export const error = (...params: any[]) => { getLogger().error(...params); };
+export const critical = (...params: any[]) => { getLogger().critical(...params); };
+export const assert = (cond: boolean, ...params: any[]) => { getLogger().assert(cond, ...params); };

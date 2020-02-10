@@ -3,29 +3,29 @@ import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';
 import compress from 'koa-compress';
 import joiRouter from 'koa-joi-router';
-import { userAgent } from 'koa-useragent';
-import { getCounters } from './counters';
-import { appendError, errorChainHandler, koaOnError } from './middleware/errorChain';
-import { responseTimeHandler } from './middleware/responseTime';
-import { staticSiteBuilder } from './middleware/staticSite';
+import {userAgent} from 'koa-useragent';
+import {getCounters} from './counters';
+import {appendError, errorChainHandler, koaOnError} from './middleware/errorChain';
+import {responseTimeHandler} from './middleware/responseTime';
+import {staticSiteBuilder} from './middleware/staticSite';
 
-export { appendError }; // make it easy for other to log errors on the chain
+export {appendError}; // make it easy for other to log errors on the chain
 
 export function setupKoa(app: Koa, router: joiRouter.Router, rootFolder: string) {
 
   // set app midleware
-  app.use(errorChainHandler)
-    .use(responseTimeHandler)
-    .use(cors());
+  app.use(errorChainHandler);
+  app.use(responseTimeHandler);
+  app.use(cors());
 
   if (getCounters().production) {
     app.use(compress());
   }
 
-  app.use(userAgent) // addes ctx.userAgent
-    .use(bodyParser())
-    .use(staticSiteBuilder(rootFolder, '/'))
-    .use(router.middleware());
+  app.use(userAgent); // addes ctx.userAgent
+  app.use(bodyParser());
+  app.use(router.middleware());
+  app.use(staticSiteBuilder(rootFolder, '/'));
 
   app.on('error', koaOnError);
   return app;
@@ -72,11 +72,4 @@ app.use(koaCors({
 
 // DB connection
 app.use(connectToDbMiddleware(pool.connect, appLogger, config.apps.api.db));
-
-....
-
-app.use(koaBodyParser());
-
-app.use(koaMount('/api', api));
-app.use(koaMount('/admin', admin));
 ***/

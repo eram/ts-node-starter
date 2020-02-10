@@ -1,7 +1,12 @@
 import 'jasmine';
 import * as Koa from 'koa';
 
-import { healthcheckHandler } from './healthcheck';
+import {healthcheckHandler} from './healthcheck';
+
+afterAll(()=>{
+  console.log('healthchecks.test done');
+});
+
 
 describe('healthcheck middleware tests', () => {
 

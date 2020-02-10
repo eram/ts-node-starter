@@ -1,7 +1,7 @@
 import HttpErrors from 'http-errors';
 import Koa from 'koa';
-import { getCounters } from '../counters';
-import { error, IndexSig, warn } from '../utils';
+import {getCounters} from '../counters';
+import {error, IndexSig, warn} from '../utils';
 
 // error chain is used by deeper levels of the app to send errors found up the chain.
 // we also handle here context errors and koa app errors

@@ -1,26 +1,44 @@
 {
-  "name": "your-app-name",
-  "script": "src/index.js",
-  "instances": "2",
-  "autorestart": true,
-  "watch": true,
-  "max_memory_restart": "1G",
-  "env": {
-    "NODE_ENV": "developement"
-  },
-  "env_test": {
-    "NODE_ENV": "test",
-    "CORALOGIX_APIKEY": "98d36d56-a8ff-75a6-1fd2-389a76edf768",
-    "NEWRELIC_APIKEY": "4ce0c3d5197802cf3d5f9368bcbd62940a2a37267329a37",
-  },
-  "env_cicd": {
-    "NODE_ENV": "cicd",
-    "CORALOGIX_APIKEY": "98d36d56-a8ff-75a6-1fd2-389a76edf768",
-    "NEWRELIC_APIKEY": "4ce0c3d5197802cf3d5f9368bcbd62940a2a37267329a37",
-  },
-  "env_production": {
-    "NODE_ENV": "production",
-    "CORALOGIX_APIKEY": "98d36d56-a8ff-75a6-1fd2-389a76edf768",
-    "NEWRELIC_APIKEY": "4ce0c3d5197802cf3d5f9368bcbd62940a2a37267329a37",
-  }
+  "apps": [
+    {
+      "name": "ts-node-starter",
+      "script": "src/index.js",
+      "args": "",
+      "instances": "1",
+      "exec_mode": "cluster",
+      "autorestart": true,
+      "watch": true,
+      "listen_timeout": 3000,
+      "max_memory_restart": "1G",
+      "restart_delay": 1000,
+      "exp_backoff_restart_delay": 200,
+      "shutdown_with_message": true,
+      "kill_timeout": 2000,
+      "source_map_support": true,
+      "instance_var": "PM2_INSTANCE",
+      "env": {
+        "LOG_ADD_TIME": true,
+        "NODE_ENV": "developement"
+      },
+      "env_test": {
+        "NODE_ENV": "test",
+        "LOG_ADD_TIME": false,
+        "CORALOGIX_APIKEY": "98d36d56-a8ff-75a6-1fd2-389a76edf768",
+        "NEWRELIC_APIKEY": "4ce0c3d5197802cf3d5f9368bcbd62940a2a37267329a37"
+      },
+      "env_cicd": {
+        "NODE_ENV": "cicd",
+        "LOG_ADD_TIME": false,
+        "CORALOGIX_APIKEY": "98d36d56-a8ff-75a6-1fd2-389a76edf768",
+        "NEWRELIC_APIKEY": "4ce0c3d5197802cf3d5f9368bcbd62940a2a37267329a37"
+      },
+      "env_production": {
+        "NODE_ENV": "production",
+        "PORT": 8000,
+        "LOG_ADD_TIME": false,
+        "CORALOGIX_APIKEY": "98d36d56-a8ff-75a6-1fd2-389a76edf768",
+        "NEWRELIC_APIKEY": "4ce0c3d5197802cf3d5f9368bcbd62940a2a37267329a37"
+      }
+    }
+  ]
 }
