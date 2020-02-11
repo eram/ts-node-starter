@@ -1,4 +1,3 @@
-import 'jasmine';
 import * as Koa from 'koa';
 import {staticSiteBuilder} from './staticSite';
 
@@ -24,7 +23,7 @@ describe('static-site middleware tests', () => {
       thrown = true;
     }
 
-    expect(thrown).toBeTrue();
+    expect(thrown).toBeTruthy();
   });
 
   it('middleware responds', async () => {
@@ -45,6 +44,6 @@ describe('static-site middleware tests', () => {
       thrown = true;
     }
 
-    expect(thrown).toBeTrue();
+    expect(thrown).toBeTruthy();
   });
 });

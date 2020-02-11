@@ -3,7 +3,7 @@
 // testing signals is out of scope for istanbul runner.
 // see note in processOn.test.ts
 import * as Http from 'http';
-import {error, info} from './';
+import {error, info} from '.';
 
 export class ProcCounters {
   reloads = 0;

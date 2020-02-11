@@ -1,7 +1,11 @@
-import 'jasmine';
+import {ProcHandlers, ProcCounters} from './processOn';
 
-afterAll(() => {
-  console.log('processOn.test done');
+describe('processOn testing', () => {
+  test('counters are loaded', () => {
+    const counters = new ProcCounters();
+    const hands = new ProcHandlers(counters);
+    expect(hands.counters.reloads).toEqual(0);
+  });
 });
 
 //

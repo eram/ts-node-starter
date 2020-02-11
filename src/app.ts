@@ -1,5 +1,3 @@
-/* istanbul ignore file */
-
 // initialize config
 import './utils/config';
 import Koa from 'koa';

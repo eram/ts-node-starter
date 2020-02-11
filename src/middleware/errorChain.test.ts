@@ -1,16 +1,15 @@
-import 'jasmine';
 import createError from 'http-errors';
 import * as Koa from 'koa';
 import {getCounters} from '../counters';
 import {errorChainHandler, koaOnError} from './errorChain';
 
-afterAll(()=>{
+afterAll(() => {
   console.log('errorChain.test done');
 });
 
 describe('errorChain middleware tests', () => {
 
-  it('ctx no error', async () => {
+  test('ctx no error', async () => {
 
     const ctx: Partial<Koa.Context> = {
       state: {},
@@ -22,7 +21,7 @@ describe('errorChain middleware tests', () => {
     expect(ctx.state.errorChain).not.toBeUndefined();
   });
 
-  it('ctx with manual error', async () => {
+  test('ctx with manual error', async () => {
 
     const errors = getCounters().errors;
     const ctx: Partial<Koa.Context> = {
@@ -42,7 +41,7 @@ describe('errorChain middleware tests', () => {
     expect(arr.length).toEqual(1);
   });
 
-  it('ctx with exception', async () => {
+  test('ctx with exception', async () => {
 
     const errors = getCounters().errors;
     const ctx: Partial<Koa.Context> = {

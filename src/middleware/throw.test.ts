@@ -1,5 +1,3 @@
-
-import 'jasmine';
 import * as Koa from 'koa';
 import {throwHandler} from './throw';
 
@@ -23,6 +21,6 @@ describe('throw middleware tests', () => {
       thrown = true;
     }
 
-    expect(thrown).toBeTrue();
+    expect(thrown).toBeTruthy();
   });
 });

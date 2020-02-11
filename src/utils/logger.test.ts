@@ -1,4 +1,3 @@
-import 'jasmine';
 import * as logger from './logger';
 
 beforeAll(() => {

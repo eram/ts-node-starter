@@ -4,9 +4,9 @@
   "description": "ts-node starter project",
   "main": "index.js",
   "scripts": {
-    "test": "nyc --reporter=lcov --reporter=text jasmine-ts --config=./jasmine.json",
+    "test": "jest",
     "lint": "eslint src/**/*.ts",
-    "clean": "node node_modules/rimraf/bin .nyc_output coverage *.log",
+    "clean": "node node_modules/rimraf/bin .nyc_output coverage *.log log dist",
     "start:node": "node src",
     "start1": "pm2-runtime ./pm2.json --env production",
     "start": "pm2 start ts-node -- -P pm2.json ./src/index.ts"
@@ -36,21 +36,15 @@
     "koa-useragent": "^4.0.0",
     "pm2": "^4.2.3",
     "rimraf": "^3.0.2",
-    "ts-node": "^8.6.2",
-    "typescript": "^3.7.5"
+    "ts-node": "^8.6.2"
   },
   "devDependencies": {
-    "@istanbuljs/nyc-config-typescript": "^1.0.1",
-    "@types/jasmine": "^3.5.3",
+    "@types/jest": "^25.1.2",
     "@typescript-eslint/eslint-plugin": "^2.19.0",
     "@typescript-eslint/parser": "^2.19.0",
-    "console-redirect": "^1.0.0",
     "eslint": "^6.8.0",
-    "jasmine": "^3.5.0",
-    "jasmine-spec-reporter": "^4.2.1",
-    "jasmine-ts": "^0.3.0",
-    "karma-typescript": "^4.1.1",
-    "nyc": "^15.0.0",
-    "source-map-support": "^0.5.16"
+    "jest": "^25.1.0",
+    "ts-jest": "^25.2.0",
+    "typescript": "^3.7.5"
   }
 }

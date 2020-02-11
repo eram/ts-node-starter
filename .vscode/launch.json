@@ -4,7 +4,6 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-
         {
             "name": "Debug current ts file",
             "type": "node",
@@ -12,7 +11,11 @@
             "args": [
                 "${relativeFile}"
             ],
-            "runtimeArgs": ["--nolazy", "-r","ts-node/register"],
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register"
+            ],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
             "protocol": "inspector",
@@ -27,7 +30,11 @@
             "args": [
                 "${workspaceRoot}/src/index.ts"
             ],
-            "runtimeArgs": ["--nolazy", "-r","ts-node/register"],
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register"
+            ],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
             "protocol": "inspector",
@@ -36,37 +43,35 @@
             ]
         },
         {
-            "name": "Test current ts file",
             "type": "node",
             "request": "launch",
-            "args": [
-                "node_modules/jasmine/bin/jasmine",
-                "--config=./jasmine.json",
+            "name": "Test this file",
+            "program": "${workspaceFolder}/node_modules/.bin/jest",
+            "args": [ 
                 "${relativeFile}"
             ],
-            "runtimeArgs": ["--nolazy", "-r","ts-node/register"],
-            "sourceMaps": true,
-            "cwd": "${workspaceRoot}",
-            "protocol": "inspector",
-            "skipFiles": [
-                "<node_internals>/**"
-            ]
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen",
+            "disableOptimisticBPs": true,
+            "windows": {
+                "program": "${workspaceFolder}/node_modules/jest/bin/jest",
+            }
         },
         {
-            "name": "Test app",
             "type": "node",
             "request": "launch",
+            "name": "Test all watch",
+            "program": "${workspaceFolder}/node_modules/.bin/jest",
             "args": [
-                "node_modules/jasmine/bin/jasmine",
-                "--config=./jasmine.json"
+                "--runInBand",
+                "--watch", "--coverage"
             ],
-            "runtimeArgs": ["--nolazy", "-r","ts-node/register"],
-            "sourceMaps": true,
-            "cwd": "${workspaceRoot}",
-            "protocol": "inspector",
-            "skipFiles": [
-                "<node_internals>/**"
-            ]
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen",
+            "disableOptimisticBPs": true,
+            "windows": {
+                "program": "${workspaceFolder}/node_modules/jest/bin/jest",
+            }
         },
     ]
 }

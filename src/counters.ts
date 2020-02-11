@@ -1,5 +1,34 @@
-import io from '@pm2/io';
 import {ProcCounters} from './utils';
+
+/**** start hack ****/
+// import io from '@pm2/io';
+
+class Counter {
+  private _val = 0;
+  val = () => this._val;
+  inc = () => this._val++;
+  dec = () => this._val--;
+}
+
+class Meter {
+  private _val = 0;
+  val = () => this._val;
+  mark = (n = 1) => this._val+=n;
+}
+
+class Histogram {
+  private _val = 0;
+  getCount = () => this._val;
+  update = (_n: number) => this._val++;
+}
+
+export const io = {
+  counter: ({}) => { return new Counter(); },
+  meter:  ({}) => { return new Meter; },
+  histogram:  ({}) => { return new Histogram; }
+};
+
+/**** end hack ****/
 
 class Counters extends ProcCounters {
 

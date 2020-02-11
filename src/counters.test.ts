@@ -1,6 +1,4 @@
-import 'jasmine';
 import {getCounters} from './counters';
-
 
 afterAll(()=>{
   console.log('couters.test done');

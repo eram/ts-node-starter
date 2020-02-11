@@ -1,4 +1,3 @@
-import 'jasmine';
 import Koa from 'koa';
 import joiRouter from 'koa-joi-router';
 import {setupKoa} from './setupKoa';

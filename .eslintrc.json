@@ -9,7 +9,7 @@
   "env": {
     "node": true
   },
-  "ignorePatterns": ["src/index.js", "node_modules/"],
+  "ignorePatterns": ["**/index.js", "node_modules/"],
   "parserOptions": {
     "ecmaVersion": 2019,
     "sourceType": "module",
@@ -17,7 +17,7 @@
   },
   "rules": {
     "no-console": "off",
-    "space-unary-ops": ["error", {"words": true, "nonwords": true, "overrides": {"!": false, "++": false}}],
+    "space-unary-ops": ["error", {"words": true, "nonwords": true, "overrides": {"!": false, "++": false, "--": false}}],
     "semi-spacing": ["error", {"before": false, "after": true}],
     "no-unexpected-multiline": ["error"],
     "array-bracket-spacing": ["error", "never"],
@@ -32,7 +32,7 @@
     "@typescript-eslint/brace-style": ["error", "1tbs", { "allowSingleLine": true }],
     "quotes": "off",
     "@typescript-eslint/quotes": ["error", "single"],
-    "@typescript-eslint/no-unused-vars": ["error"],
+    "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
     "indent": "off",
     "@typescript-eslint/indent": ["error", 2],
     "@typescript-eslint/explicit-function-return-type": "off",

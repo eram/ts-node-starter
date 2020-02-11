@@ -1,4 +1,3 @@
-import 'jasmine';
 import * as Koa from 'koa';
 
 import {healthcheckHandler} from './healthcheck';
@@ -14,7 +13,7 @@ describe('healthcheck middleware tests', () => {
 
     let fnCalled = 0;
     function setFn(field: string, val: string) {
-      expect(typeof (field) === 'string' && typeof (val) === 'string').toBeTrue();
+      expect(typeof (field) === 'string' && typeof (val) === 'string').toBeTruthy();
       fnCalled++;
     }
 
