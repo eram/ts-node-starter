@@ -1,4 +1,4 @@
-export * from './fs';
+export * from './asyncs';
 export * from './logger';
 export * from './config';
 export * from './processOn';

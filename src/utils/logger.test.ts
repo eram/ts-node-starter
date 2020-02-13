@@ -4,10 +4,6 @@ beforeAll(() => {
   process.env.LOG_ADD_TIME = 'true';
 });
 
-afterAll(() => {
-  console.log('logger.test done');
-});
-
 describe('logger tests', () => {
 
   it('created', () => {

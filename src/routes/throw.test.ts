@@ -1,14 +1,15 @@
 import * as Koa from 'koa';
-import {throwHandler} from './throw';
+import joiRouter, {FullHandler, NestedHandler} from 'koa-joi-router';
+import {appendRoute} from './throw';
 
-
-afterAll(()=>{
-  console.log('throw.test done');
-});
 
 describe('throw middleware tests', () => {
 
   it('it throws', async () => {
+
+    const router = appendRoute(joiRouter(), '/');
+    const handler = router.routes[0].handler as NestedHandler;
+    const throwHandler = handler[0] as FullHandler;
 
     const ctx: Partial<Koa.Context> = {
     };

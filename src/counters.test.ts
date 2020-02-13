@@ -1,9 +1,5 @@
 import {getCounters} from './counters';
 
-afterAll(()=>{
-  console.log('couters.test done');
-});
-
 describe('counters tests', () => {
 
   it('created', () => {

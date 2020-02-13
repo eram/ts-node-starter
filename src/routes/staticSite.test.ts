@@ -1,9 +1,6 @@
 import * as Koa from 'koa';
 import {staticSiteBuilder} from './staticSite';
 
-afterAll(() => {
-  console.log('staticSite.test done');
-});
 
 describe('static-site middleware tests', () => {
 

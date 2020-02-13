@@ -1,16 +1,11 @@
 import * as Koa from 'koa';
-import {sleep} from '../utils';
+import joiRouter from 'koa-joi-router';
 
-export const i = ['111', 1];
 
-export interface IHhalom {
-  str: number;
-}
-
-async function _healthcheck() {
+async function healthcheck() {
 
   // TODO: check something interesting....
-  await sleep(1);
+  await Promise.resolve();
 
   const heap = Math.round(process.memoryUsage().heapUsed / 1024 / 1024);
   return {
@@ -22,9 +17,11 @@ async function _healthcheck() {
   };
 }
 
-export async function healthcheckHandler(ctx: Koa.Context): Promise<void> {
+async function healthcheckHandler(ctx: Koa.Context, next: Koa.Next): Promise<void> {
 
-  const {ok, msg} = await _healthcheck();
+  await next();
+
+  const {ok, msg} = await healthcheck();
 
   ctx.status = 200;
   ctx.set('Cache-Control', 'no-cache');
@@ -33,4 +30,14 @@ export async function healthcheckHandler(ctx: Koa.Context): Promise<void> {
     ok: (ok ? true : false),
     ...msg
   };
+}
+
+export function appendRoute(router: joiRouter.Router, path: string){
+  router.route({
+    method: ['GET'],
+    path,
+    handler: healthcheckHandler
+  });
+
+  return router;
 }

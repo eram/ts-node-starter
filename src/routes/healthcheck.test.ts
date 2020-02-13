@@ -1,15 +1,14 @@
 import * as Koa from 'koa';
-
-import {healthcheckHandler} from './healthcheck';
-
-afterAll(()=>{
-  console.log('healthchecks.test done');
-});
-
+import joiRouter, {FullHandler, NestedHandler} from 'koa-joi-router';
+import {appendRoute} from './healthcheck';
 
 describe('healthcheck middleware tests', () => {
 
   it('ctx is setup correctly', async () => {
+
+    const router = appendRoute(joiRouter(), '/');
+    const handler = router.routes[0].handler as NestedHandler;
+    const healthcheckHandler = handler[0] as FullHandler;
 
     let fnCalled = 0;
     function setFn(field: string, val: string) {
@@ -26,7 +25,7 @@ describe('healthcheck middleware tests', () => {
 
     expect(ctx.body).not.toBeTruthy();
 
-    await healthcheckHandler(ctx as Koa.Context);
+    await healthcheckHandler(ctx as Koa.Context, async () => Promise.resolve());
 
     expect(fnCalled).toEqual(1);
     expect(ctx.status).toEqual(200);

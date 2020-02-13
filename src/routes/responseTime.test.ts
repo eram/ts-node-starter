@@ -5,10 +5,6 @@ import {getCounters} from '../counters';
 // import io from '@pm2/io';
 import {io} from '../counters';
 
-afterAll(()=>{
-  console.log('responseTime.test done');
-});
-
 describe('responseTime middleware tests', () => {
 
   test('meter is working as expected', async () => {

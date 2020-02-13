@@ -3,10 +3,6 @@ import * as Koa from 'koa';
 import {getCounters} from '../counters';
 import {errorChainHandler, koaOnError} from './errorChain';
 
-afterAll(() => {
-  console.log('errorChain.test done');
-});
-
 describe('errorChain middleware tests', () => {
 
   test('ctx no error', async () => {

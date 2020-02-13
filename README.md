@@ -2,17 +2,18 @@
 this is a Typescript starter project:
 - typescript integrated into debugging and running (js files are not created)
 - async everywhere: main is the application start point
-- environment loaded from .env to process.env
+- environment loaded from pm2 to process.env
 - vscode integration: debug code and tests with F5 etc
 - app server intergated - KoaJS
    - router with parameter validations - Joi based
    - static site served from ```public/``` folder
    - healthcheck api
-- counters with pmx
+   - sample api (/getCpu/1)
+- db orm/repo
+- counters with pm2/io
 - logger using console
-- unit tests - jasmine
-- converage - istanbul/nyc
-- code styling enforcement - tslint
+- unit tests and converage - jest
+- code styling enforcement - eslint
 
 ## setup
 1. install nodejs and git
@@ -24,11 +25,10 @@ this is a Typescript starter project:
 config files under root folder:
 - env.defaults.json - default environment vars
 - pm2 conf
-- jasmin conf
-- tslint conf
+- jest conf
+- eslint conf
 - tsconfig - typescript conf
 - Dockerfile
-- .nycrc - nyc/instanbul conf
 
 ## todo
 - pm2

@@ -13,8 +13,7 @@
             ],
             "runtimeArgs": [
                 "--nolazy",
-                "-r",
-                "ts-node/register"
+                "-r", "ts-node/register"
             ],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
@@ -28,12 +27,11 @@
             "type": "node",
             "request": "launch",
             "args": [
-                "${workspaceRoot}/src/index.ts"
+                "${workspaceRoot}/src/app.ts"
             ],
             "runtimeArgs": [
                 "--nolazy",
-                "-r",
-                "ts-node/register"
+                "-r", "ts-node/register"
             ],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
@@ -43,12 +41,13 @@
             ]
         },
         {
+            "name": "Jest this",
             "type": "node",
             "request": "launch",
-            "name": "Test this file",
             "program": "${workspaceFolder}/node_modules/.bin/jest",
-            "args": [ 
-                "${relativeFile}"
+            "args": [
+                "--runInBand",
+                "--findRelatedTests", "${relativeFile}"
             ],
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen",
@@ -58,9 +57,9 @@
             }
         },
         {
+            "name": "Jest watch",
             "type": "node",
             "request": "launch",
-            "name": "Test all watch",
             "program": "${workspaceFolder}/node_modules/.bin/jest",
             "args": [
                 "--runInBand",

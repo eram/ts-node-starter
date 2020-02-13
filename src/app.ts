@@ -3,32 +3,13 @@ import './utils/config';
 import Koa from 'koa';
 import joiRouter from 'koa-joi-router';
 import {getCounters} from './counters';
-import {healthcheckHandler} from './middleware/healthcheck';
-import {throwHandler} from './middleware/throw';
+import {appendRoute as healthcheckRoute} from './routes/healthcheck';
+import {appendRoute as throwRoute} from './routes/throw';
+import {appendRoute as getCpuRoute} from './routes/getCpu';
 import {setupKoa} from './setupKoa';
-import {error, info, ProcHandlers, setProcHandlers as setupProcHandlers} from './utils';
-
-function setupRouter(router: joiRouter.Router) {
-
-  const prefix = process.env.APP_ROOT || '/';
-  router.prefix(prefix);
-
-  router.route({
-    method: ['GET'],
-    path: '/_healthcheck',
-    handler: healthcheckHandler,
-    validate: {} // TODO: add validations
-  });
-
-  // for debug purpose only: trigger a throw in the error-chain middleware
-  if (!getCounters().production) {
-    router.route({
-      method: ['GET'],
-      path: '/_throw',
-      handler: throwHandler
-    });
-  }
-}
+import {error, info, ProcHandlers, setProcHandlers as setupProcHandlers, assert} from './utils';
+import {initDb} from './repos';
+import {initCpuCollector} from './controllers/cpuCollector';
 
 // main application entry point
 export async function app(): Promise<number> {
@@ -40,13 +21,33 @@ export async function app(): Promise<number> {
   // any additional setup should be done here
   // ...
 
-  // setup server and start it
-  // once we start listening PM2 knows we are ready to recieve traffic. this needs to happen
-  // within before the "listen_timeout" (default 3000 msec).
+  // init DB and repos
+  assert(process.env.DB_INIT_OPTIONS && process.env.DB_INIT_OPTIONS.indexOf('\"dialect\"') > 0);
+  const dbOpts = JSON.parse(process.env.DB_INIT_OPTIONS);
+  const db = initDb(dbOpts, (dbOpts.dialect == 'sqlite'));
+
+  // init controllers
+  initCpuCollector(db.cpuHisotryRepo);
+
+  // setup router
   const router = joiRouter();
-  setupRouter(router);
+  const prefix = process.env.APP_ROOT || '/';
+  router.prefix(prefix);
+
+  healthcheckRoute(router, '/_healthcheck');
+  getCpuRoute(router, '/getcpu/:num', db.cpuHisotryRepo);
+
+  // for debug purpose only: trigger a throw in the error-chain middleware
+  if (!getCounters().production) {
+    throwRoute(router, '/_throw');
+  }
+
+  // setup server and start it
   const srv = setupKoa(new Koa(), router, './public/');
   const port = Number(process.env.PORT);
+
+  // once we start listening PM2 knows we are ready to recieve traffic. this needs to happen
+  // within before the "listen_timeout" (default 3000 msec).
   hands.server = srv.listen(port);
   if (!hands.server.listening) {
     error(`failed to start server on port ${port}`);
@@ -56,3 +57,10 @@ export async function app(): Promise<number> {
   info(`Server started on http://${process.env.HOSTNAME}:${port}`);
   return 0;
 }
+
+// node entry point (TS)
+app().then((rc: number) => {
+  if (rc) { process.exit(rc); }
+}).catch(err => {
+  throw new Error(err);
+});

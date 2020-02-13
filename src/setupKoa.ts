@@ -5,9 +5,9 @@ import compress from 'koa-compress';
 import joiRouter from 'koa-joi-router';
 import {userAgent} from 'koa-useragent';
 import {getCounters} from './counters';
-import {appendError, errorChainHandler, koaOnError} from './middleware/errorChain';
-import {responseTimeHandler} from './middleware/responseTime';
-import {staticSiteBuilder} from './middleware/staticSite';
+import {appendError, errorChainHandler, koaOnError} from './routes/errorChain';
+import {responseTimeHandler} from './routes/responseTime';
+import {staticSiteBuilder} from './routes/staticSite';
 
 export {appendError}; // make it easy for other to log errors on the chain
 
