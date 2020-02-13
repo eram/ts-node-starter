@@ -17,7 +17,7 @@ async function healthcheck() {
   };
 }
 
-async function healthcheckHandler(ctx: Koa.Context, next: Koa.Next): Promise<void> {
+async function healthcheckHandler(ctx: Koa.Context, next: Koa.Next) {
 
   await next();
 

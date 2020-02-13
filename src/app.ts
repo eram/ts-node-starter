@@ -43,11 +43,10 @@ export async function app(): Promise<number> {
   }
 
   // setup server and start it
-  const srv = setupKoa(new Koa(), router, './public/');
-  const port = Number(process.env.PORT);
-
   // once we start listening PM2 knows we are ready to recieve traffic. this needs to happen
   // within before the "listen_timeout" (default 3000 msec).
+  const srv = setupKoa(new Koa(), router, './public/');
+  const port = Number(process.env.PORT);
   hands.server = srv.listen(port);
   if (!hands.server.listening) {
     error(`failed to start server on port ${port}`);
