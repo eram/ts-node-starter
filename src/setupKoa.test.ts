@@ -1,7 +1,7 @@
 import Koa from 'koa';
 import joiRouter from 'koa-joi-router';
-import {setupKoa} from './setupKoa';
-import {getCounters} from './counters';
+import { setupKoa } from './setupKoa';
+import { getCounters } from './counters';
 
 describe('setupKoa tests', () => {
 

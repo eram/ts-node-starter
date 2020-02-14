@@ -1,4 +1,4 @@
-import {ProcHandlers, ProcCounters} from './processOn';
+import { ProcHandlers, ProcCounters } from './processOn';
 
 describe('processOn testing', () => {
   test('counters are loaded', () => {

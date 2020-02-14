@@ -2,14 +2,15 @@
 import './utils/config';
 import Koa from 'koa';
 import joiRouter from 'koa-joi-router';
-import {getCounters} from './counters';
-import {appendRoute as healthcheckRoute} from './routes/healthcheck';
-import {appendRoute as throwRoute} from './routes/throw';
-import {appendRoute as getCpuRoute} from './routes/getCpu';
-import {setupKoa} from './setupKoa';
-import {error, info, ProcHandlers, setProcHandlers as setupProcHandlers, assert} from './utils';
-import {initDb} from './repos';
-import {initCpuCollector} from './controllers/cpuCollector';
+import { getCounters } from './counters';
+import { appendRoute as healthcheckRoute } from './routes/healthcheck';
+import { appendRoute as throwRoute } from './routes/throw';
+import { appendRoute as getCpuRoute } from './routes/getCpu';
+import { appendRoute as getOpenApiRoute } from './routes/openApiDocs';
+import { setupKoa } from './setupKoa';
+import { error, info, ProcHandlers, setProcHandlers as setupProcHandlers, assert } from './utils';
+import { initDb } from './repos';
+import { initCpuCollector } from './controllers/cpuCollector';
 
 // main application entry point
 export async function app(): Promise<number> {
@@ -31,8 +32,8 @@ export async function app(): Promise<number> {
 
   // setup router
   const router = joiRouter();
-  const prefix = process.env.APP_ROOT || '/';
-  router.prefix(prefix);
+  const basePath = process.env.APP_BASE_PATH || '/';
+  router.prefix(basePath);
 
   healthcheckRoute(router, '/_healthcheck');
   getCpuRoute(router, '/getcpu/:num', db.cpuHisotryRepo);
@@ -41,6 +42,9 @@ export async function app(): Promise<number> {
   if (!getCounters().production) {
     throwRoute(router, '/_throw');
   }
+
+  // setup swagger under '/_apiDocs' and '/_api.json'
+  getOpenApiRoute(router, basePath);
 
   // setup server and start it
   // once we start listening PM2 knows we are ready to recieve traffic. this needs to happen

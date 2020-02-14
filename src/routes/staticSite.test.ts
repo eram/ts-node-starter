@@ -1,5 +1,5 @@
 import * as Koa from 'koa';
-import {staticSiteBuilder} from './staticSite';
+import { staticSiteBuilder } from './staticSite';
 
 
 describe('static-site middleware tests', () => {

@@ -1,9 +1,9 @@
-import {Options} from 'sequelize/types';
-import {Sequelize, SequelizeOptions} from 'sequelize-typescript';
-import {info, debug} from '../utils';
+import { Options } from 'sequelize/types';
+import { Sequelize, SequelizeOptions } from 'sequelize-typescript';
+import { info, debug } from '../utils';
 
-import {CpuHistoryRepo, CpuEntry} from './cpuEntry.model';
-export {CpuHistoryRepo, CpuEntry} from './cpuEntry.model';
+import { CpuHistoryRepo, CpuEntry } from './cpuEntry.model';
+export { CpuHistoryRepo, CpuEntry } from './cpuEntry.model';
 
 /* Options: {
   dialect: 'sqlite',
@@ -26,7 +26,7 @@ export function initDb(opts: Options, createDb = false){
   }
 
   const cpuHisotryRepo: CpuHistoryRepo = db.getRepository(CpuEntry);
-  return {db, cpuHisotryRepo};
+  return { db, cpuHisotryRepo };
 }
 
 /* TODO: MINI REPOSITORY >> PROXY

@@ -1,4 +1,4 @@
-import {getCounters} from './counters';
+import { getCounters } from './counters';
 
 describe('counters tests', () => {
 

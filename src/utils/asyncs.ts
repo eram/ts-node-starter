@@ -1,5 +1,5 @@
 import * as _fs from 'fs';
-import {promisify} from 'util';
+import { promisify } from 'util';
 
 // this is just an override of the 'fs' functions to make them async
 export const asyncs = {

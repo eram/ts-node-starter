@@ -21,7 +21,7 @@
     "semi-spacing": ["error", {"before": false, "after": true}],
     "no-unexpected-multiline": ["error"],
     "array-bracket-spacing": ["error", "never"],
-    "object-curly-spacing": ["error", "never"],
+    "object-curly-spacing": ["error", "always"],
     "keyword-spacing": ["error", {"before": true, "after": true}],
     "no-trailing-spaces": ["error"],
     "one-var": ["error", "never"],

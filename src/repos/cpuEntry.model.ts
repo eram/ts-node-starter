@@ -1,4 +1,4 @@
-import {Table, Column, Model, Repository, PrimaryKey, AutoIncrement} from 'sequelize-typescript';
+import { Table, Column, Model, Repository, PrimaryKey, AutoIncrement } from 'sequelize-typescript';
 
 
 @Table({
@@ -16,4 +16,4 @@ class CpuEntry extends Model<CpuEntry> {
 
 // eslint-disable-next-line @typescript-eslint/no-type-alias
 type CpuHistoryRepo = Repository<CpuEntry>;
-export {CpuHistoryRepo, CpuEntry};
+export { CpuHistoryRepo, CpuEntry };

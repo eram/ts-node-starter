@@ -1,14 +1,14 @@
 import * as Koa from 'koa';
-import joiRouter, {FullHandler, NestedHandler} from 'koa-joi-router';
-import {appendRoute} from './healthcheck';
+import joiRouter from 'koa-joi-router';
+import { appendRoute } from './healthcheck';
 
 describe('healthcheck middleware tests', () => {
 
   it('ctx is setup correctly', async () => {
 
     const router = appendRoute(joiRouter(), '/');
-    const handler = router.routes[0].handler as NestedHandler;
-    const healthcheckHandler = handler[0] as FullHandler;
+    const handler = router.routes[0].handler as joiRouter.NestedHandler;
+    const healthcheckHandler = handler[0] as joiRouter.FullHandler;
 
     let fnCalled = 0;
     function setFn(field: string, val: string) {

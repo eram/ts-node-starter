@@ -3,13 +3,13 @@ import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';
 import compress from 'koa-compress';
 import joiRouter from 'koa-joi-router';
-import {userAgent} from 'koa-useragent';
-import {getCounters} from './counters';
-import {appendError, errorChainHandler, koaOnError} from './routes/errorChain';
-import {responseTimeHandler} from './routes/responseTime';
-import {staticSiteBuilder} from './routes/staticSite';
+import { userAgent } from 'koa-useragent';
+import { getCounters } from './counters';
+import { appendError, errorChainHandler, koaOnError } from './routes/errorChain';
+import { responseTimeHandler } from './routes/responseTime';
+import { staticSiteBuilder } from './routes/staticSite';
 
-export {appendError}; // make it easy for other to log errors on the chain
+export { appendError }; // make it easy for other to log errors on the chain
 
 export function setupKoa(app: Koa, router: joiRouter.Router, rootFolder: string) {
 
@@ -26,6 +26,7 @@ export function setupKoa(app: Koa, router: joiRouter.Router, rootFolder: string)
   app.use(bodyParser());
   app.use(router.middleware());
   app.use(staticSiteBuilder(rootFolder, '/'));
+
 
   app.on('error', koaOnError);
   return app;

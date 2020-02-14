@@ -1,5 +1,5 @@
-import {Options} from 'sequelize/types';
-import {initDb} from '.';
+import { Options } from 'sequelize/types';
+import { initDb } from '.';
 
 describe('cpuEntry model tests', () => {
 

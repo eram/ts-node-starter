@@ -1,6 +1,6 @@
 import Koa from 'koa';
-import {getCounters} from '../counters';
-import {appendError} from '../setupKoa';
+import { getCounters } from '../counters';
+import { appendError } from '../setupKoa';
 
 let maxRespTime = Number(process.env.WARN_RESPONSE_TIME) || 100;
 

@@ -1,7 +1,7 @@
 import createError from 'http-errors';
 import * as Koa from 'koa';
-import {getCounters} from '../counters';
-import {errorChainHandler, koaOnError} from './errorChain';
+import { getCounters } from '../counters';
+import { errorChainHandler, koaOnError } from './errorChain';
 
 describe('errorChain middleware tests', () => {
 

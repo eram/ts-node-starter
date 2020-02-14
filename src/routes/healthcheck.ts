@@ -21,7 +21,7 @@ async function healthcheckHandler(ctx: Koa.Context, next: Koa.Next) {
 
   await next();
 
-  const {ok, msg} = await healthcheck();
+  const { ok, msg } = await healthcheck();
 
   ctx.status = 200;
   ctx.set('Cache-Control', 'no-cache');

@@ -1,7 +1,7 @@
-import {initCpuCollector} from './cpuCollector';
-import {CpuEntry} from '../repos';
-import {sleep} from '../utils';
-import {Repository} from 'sequelize-typescript';
+import { initCpuCollector } from './cpuCollector';
+import { CpuEntry } from '../repos';
+import { sleep } from '../utils';
+import { Repository } from 'sequelize-typescript';
 
 
 describe('cpuCollector controller tests', () => {
@@ -13,7 +13,7 @@ describe('cpuCollector controller tests', () => {
       create: jest.fn(async (values: {cpu: number}, _options: object) => {
         expect(typeof values).toEqual('object');
         expect(values).toHaveProperty('cpu');
-        return Promise.resolve({id:1, cpu: values.cpu});
+        return Promise.resolve({ id:1, cpu: values.cpu });
       })
     };
 

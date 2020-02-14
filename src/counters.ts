@@ -1,4 +1,4 @@
-import {ProcCounters} from './utils';
+import { ProcCounters } from './utils';
 
 /**** start hack ****/
 // import io from '@pm2/io';

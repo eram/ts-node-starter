@@ -1,9 +1,9 @@
 import * as Koa from 'koa';
-import {sleep} from '../utils';
-import {responseTimeHandler, setMaxRespTime} from './responseTime';
-import {getCounters} from '../counters';
+import { sleep } from '../utils';
+import { responseTimeHandler, setMaxRespTime } from './responseTime';
+import { getCounters } from '../counters';
 // import io from '@pm2/io';
-import {io} from '../counters';
+import { io } from '../counters';
 
 describe('responseTime middleware tests', () => {
 
