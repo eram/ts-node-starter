@@ -1,18 +1,34 @@
 import createError from 'http-errors';
-import Koa from 'koa';
-import joiRouter from 'koa-joi-router';
+import joiRouter, { Joi } from 'koa-joi-router';
 
-async function throwHandler(_ctx: Koa.Context, _next: () => Promise<void>) {
-  await Promise.resolve(); // must have await...
-  throw createError(503, '_throw was called');
-}
+const meta = {
+  swagger: {
+    summary: 'throw',
+    description: 'throws exception',
+    tags: ['healthcheck']
+  }
+};
+
+const validate = {
+  params: {
+  },
+  output: {
+    '500-503': {
+      body: Joi.object({
+        message: Joi.string().description('error message')
+      }).description('error body')
+    }
+  }
+};
 
 
 export function appendRoute(router: joiRouter.Router, path: string){
   router.route({
     method: ['GET'],
     path,
-    handler: throwHandler
+    handler: () => { throw createError(503, '_throw was called'); },
+    validate,
+    meta
   });
 
   return router;

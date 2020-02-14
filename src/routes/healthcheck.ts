@@ -1,5 +1,32 @@
 import * as Koa from 'koa';
-import joiRouter from 'koa-joi-router';
+import joiRouter, { Joi } from 'koa-joi-router';
+
+const meta = {
+  swagger: {
+    summary: 'Health check',
+    description: 'Get application health check status',
+    tags: ['healthcheck']
+  }
+};
+
+const validate = {
+  params: {
+  },
+  output: {
+    '200-299': {
+      body: Joi.object({
+        ok: Joi.boolean().description('status'),
+      }).options({
+        allowUnknown: true
+      }).description('status object')
+    },
+    500: {
+      body: Joi.object({
+        message: Joi.string().description('error message')
+      }).description('error body')
+    }
+  }
+};
 
 
 async function healthcheck() {
@@ -36,7 +63,9 @@ export function appendRoute(router: joiRouter.Router, path: string){
   router.route({
     method: ['GET'],
     path,
-    handler: healthcheckHandler
+    handler: healthcheckHandler,
+    validate,
+    meta
   });
 
   return router;
