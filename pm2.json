@@ -16,8 +16,11 @@
       "kill_timeout": 2000,
       "source_map_support": true,
       "instance_var": "PM2_INSTANCE",
+      "log_file": "./logs/app.log",
+      "time": true,
       "env": {
-        "LOG_ADD_TIME": true,
+        "NODE_OPTIONS": ["--inspect", "--inspect-brk"],
+        "LOG_ADD_TIME": false,
         "NODE_ENV": "developement"
       },
       "env_test": {

@@ -41,6 +41,31 @@
             ]
         },
         {
+            "name": "Debug pm2",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/node_modules/pm2/bin/pm2-dev",
+            "args": [
+                "start", "${workspaceFolder}/src/index.js", 
+              //  "--no-autorestart", "--no-daemon",
+              "--node-args=\"--inspect-brk\"",
+            ],
+            "runtimeArgs": [
+            ],
+            "sourceMaps": true,
+            "cwd": "${workspaceRoot}",
+            "protocol": "inspector",
+            "skipFiles": [
+                "<node_internals>/**"
+            ]
+        },
+        {
+            "name": "Attach",
+            "type": "node",
+            "request": "attach",
+            "port": 9229
+        },
+        {
             "name": "Jest this",
             "type": "node",
             "request": "launch",

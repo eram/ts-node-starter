@@ -4,10 +4,11 @@ import bodyParser from 'koa-bodyparser';
 import compress from 'koa-compress';
 import joiRouter from 'koa-joi-router';
 import { userAgent } from 'koa-useragent';
-import { getCounters } from './counters';
-import { appendError, errorChainHandler, koaOnError } from './routes/errorChain';
+import { appendError, errorChainHandler } from './routes/errorChain';
 import { responseTimeHandler } from './routes/responseTime';
 import { staticSiteBuilder } from './routes/staticSite';
+import { config, error } from './utils';
+import io from '@pm2/io';
 
 export { appendError }; // make it easy for other to log errors on the chain
 
@@ -16,9 +17,10 @@ export function setupKoa(app: Koa, router: joiRouter.Router, rootFolder: string)
   // set app midleware
   app.use(errorChainHandler);
   app.use(responseTimeHandler);
+  app.use(io.koaErrorHandler());
   app.use(cors());
 
-  if (getCounters().production) {
+  if (config.production) {
     app.use(compress());
   }
 
@@ -27,8 +29,7 @@ export function setupKoa(app: Koa, router: joiRouter.Router, rootFolder: string)
   app.use(router.middleware());
   app.use(staticSiteBuilder(rootFolder, '/'));
 
-
-  app.on('error', koaOnError);
+  app.on('error', (err) => error('Koa server error', err));
   return app;
 }
 

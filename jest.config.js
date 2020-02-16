@@ -29,7 +29,8 @@ module.exports = {
 
   // An array of regexp pattern strings used to skip coverage collection
   coveragePathIgnorePatterns: [
-    "\\\\node_modules\\\\"
+    "\\\\node_modules\\\\",
+    "\\index.ts"
   ],
 
   // A list of reporter names that Jest uses when writing coverage reports
@@ -126,7 +127,7 @@ module.exports = {
   // snapshotSerializers: [],
 
   // The test environment that will be used for testing
-  // testEnvironment: "node",
+  // DONT!! testEnvironment: "node",
 
   // Options that will be passed to the testEnvironment
   // testEnvironmentOptions: {},

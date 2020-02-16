@@ -8,12 +8,12 @@ import { appendRoute as throwRoute } from './routes/throw';
 import { appendRoute as getCpuRoute } from './routes/getCpu';
 import { appendRoute as getOpenApiRoute } from './routes/openApiDocs';
 import { setupKoa } from './setupKoa';
-import { error, info, ProcHandlers, setProcHandlers as setupProcHandlers, assert } from './utils';
+import { error, info, ProcHandlers, setProcHandlers as setupProcHandlers, assert, config, sleep } from './utils';
 import { initDb } from './repos';
 import { initCpuCollector } from './controllers/cpuCollector';
 
 // main application entry point
-export async function app(): Promise<number> {
+export async function app() {
 
   await Promise.resolve(); // stop complaining
   const hands = new ProcHandlers(getCounters());
@@ -39,7 +39,7 @@ export async function app(): Promise<number> {
   getCpuRoute(router, '/getcpu/:num', db.cpuHisotryRepo);
 
   // for debug purpose only: trigger a throw in the error-chain middleware
-  if (!getCounters().production) {
+  if (!config.production) {
     throwRoute(router, '/_throw');
   }
 
@@ -52,6 +52,9 @@ export async function app(): Promise<number> {
   const srv = setupKoa(new Koa(), router, './public/');
   const port = Number(process.env.PORT);
   hands.server = srv.listen(port);
+
+  await sleep(100);
+
   if (!hands.server.listening) {
     error(`failed to start server on port ${port}`);
     return 3;

@@ -9,6 +9,7 @@
       "downlevelIteration": true,      
       "experimentalDecorators": true,
       "emitDecoratorMetadata": true,
+      "skipLibCheck": true
     },
     "include": [
       "src/**/*"

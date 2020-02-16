@@ -1,7 +1,7 @@
 import HttpErrors from 'http-errors';
 import Koa from 'koa';
 import { getCounters } from '../counters';
-import { error, IndexSig, warn } from '../utils';
+import { error, IndexSig, warn, config } from '../utils';
 
 // error chain is used by deeper levels of the app to send errors found up the chain.
 // we also handle here context errors and koa app errors
@@ -29,7 +29,7 @@ export async function errorChainHandler(ctx: Koa.Context, next: () => Promise<vo
       };
 
       // on dev send the stack to the client
-      if (!getCounters().production && !!err.stack) {
+      if (!config.production && !!err.stack) {
         ctx.body = {
           ...ctx.body,
           code: err.code,

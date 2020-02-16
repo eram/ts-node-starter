@@ -1,6 +1,28 @@
+// hack to workaround 'uref is not a function' error under jest environment
+Object(setInterval(() => { return; }, 0)).__proto__.unref = function () { return; };
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+import io = require('@pm2/io');
+
 import { getCounters } from './counters';
+import { sleep } from './utils';
+import { Metric } from '@pm2/io/build/main/services/metrics';
 
 describe('counters tests', () => {
+
+  test('meter is working as expected', async () => {
+
+    io.init();
+    const mtr = io.meter({
+      name: 'mtr1',
+      tickInterval: 1  // measure every 1 msec
+    } as Metric);
+
+    mtr.mark();
+    await sleep(10);
+    mtr.mark();
+    expect(mtr.val()).toBeGreaterThan(0.01);
+  });
+
 
   it('created', () => {
     const counters = getCounters();

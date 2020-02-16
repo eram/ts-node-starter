@@ -1,5 +1,6 @@
 import * as Koa from 'koa';
 import joiRouter, { Joi } from 'koa-joi-router';
+import { config } from '../utils';
 
 const meta = {
   swagger: {
@@ -38,8 +39,9 @@ async function healthcheck() {
   return {
     ok: (heap < 1000),
     msg: {
+      PM2_instance: config.isPm2Instance? process.env.PM2_INSTANCE : '-',
       uptime: Math.round(process.uptime()),
-      heap: `${heap}MB`
+      heap: `${heap}MB`,
     }
   };
 }
