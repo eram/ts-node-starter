@@ -6,14 +6,18 @@ this is a Typescript starter project:
 - vscode integration: debug code and tests with F5 etc
 - app server intergated - KoaJS
    - router with parameter validations - Joi based
-   - static site served from ```public/``` folder
-   - healthcheck api
-   - sample api (/getCpu/1)
+   - static site served from ```public/``` folder (/)
+   - healthcheck api (/_healthcheck)
+   - sample api (/getcpu/1)
 - db orm/repo
 - counters with pm2/io
 - logger using console
 - unit tests and converage - jest
-- code styling enforcement - eslint
+- opinionated code styling enforcement - eslint
+- pm2
+  - launch and watchdog
+  - counters - pmx
+- dockerfile
 
 ## setup
 1. install nodejs and git
@@ -21,18 +25,19 @@ this is a Typescript starter project:
 1. ```> npm install```
 1. ```> npm start```
 
-## config
+## config files
 config files under root folder:
 - env.defaults.json - default environment vars
-- pm2 conf
-- jest conf
-- eslint conf
+- pm2.json - pm2 conf / per environment env vars
+- jest.config.js - jest conf
+- .eslintrc.json - eslint conf
 - tsconfig - typescript conf
-- Dockerfile
+- package.json - node project
+- dockerfile - docker build
 
 ## todo
 - pm2
   - launch and watchdog
   - log aggregation - logstash
-  - counters - pmx and new-relic
-- docker
+  - counters to new-relic
+
