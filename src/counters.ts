@@ -1,5 +1,3 @@
-// hack to workaround 'uref is not a function' error under jest environment
-Object(setInterval(() => { return; }, 0)).__proto__.unref = function () { return; };
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 import io = require('@pm2/io');
 
