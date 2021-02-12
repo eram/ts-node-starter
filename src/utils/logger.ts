@@ -1,94 +1,120 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* import { coralogixLog } from './coralogix'; */
+//!!! DO NOT IMPORT from ".ENV"
+import { format } from "util";
+import * as cluster from "cluster";
+import process from "process";
+import { IDictionary, POJO } from ".";
+
 // this enum must match with CoralogixLogger.Severity
 export enum LogLevel { debug = 1, trace = 2, info = 3, warn = 4, error = 5, critical = 6 }
-export type ILogFn = (level: LogLevel, ...params: any[]) => void;
 
-function consoleLogger(_ctx: string) {
+export type ILogFn = (level: LogLevel, ...params: unknown[]) => void;
 
-  const addTime = (process.env.LOG_ADD_TIME && process.env.LOG_ADD_TIME !== 'false');
-  const ctx = (_ctx && _ctx.length)? `[${_ctx}]` : '';
+let hooked: IDictionary<(message?: unknown, ...optionalParams: unknown[]) => void>;
 
-  return (level: LogLevel, ...params: any[]) => {
+function rawLogger(_ctx: string) {
 
-    let prefix = addTime? `${(new Date()).toISOString() + ' ' + ctx}` : ctx;
-    let logger = console.error;
-    switch (level) {
-      case LogLevel.debug: logger = console.debug; break;
-      case LogLevel.trace: logger = console.trace; break;
-      case LogLevel.info: logger = console.info; break;
-      case LogLevel.warn: logger = console.warn; break;
-      case LogLevel.error: break;
-      default: prefix = '[CRITICAL]';
-    }
+  const addTime = (process.env.LOG_ADD_TIME && process.env.LOG_ADD_TIME !== "false");
+  const ctx = (_ctx && _ctx.length) ? `[${_ctx}] ` : "";
+  const { assert, debug, trace, info, warn, error } = (!!hooked) ? hooked : console;    // eslint-disable-line
+  const logFns = [assert, debug, trace, info, warn, error, error];
 
-    logger(prefix, ...params);
+  return (level: LogLevel, ...params: unknown[]) => {
+    const prefix = `${(addTime ? (new Date()).toISOString() + " " : "")}${ctx}${params[0]}`;
+    params[0] = prefix;
+    logFns[level](...params);
+  };
+}
+
+function jsonLogger(_ctx: string) {
+
+  const addTime = (process.env.LOG_ADD_TIME && process.env.LOG_ADD_TIME !== "false");
+  const { assert, debug, trace, info, warn, error } = (!!hooked) ? hooked : console;    // eslint-disable-line
+  const logFns = [assert, debug, trace, info, warn, error, error];
+
+  return (level: LogLevel, ...params: unknown[]) => {
+
+    const out: POJO = {
+      message: format(...params),                  // the actual message that has been `console.log`
+      type: level < LogLevel.error ? "out" : "err",
+      process_id: process.pid,                          // eslint-disable-line
+      app_name: process.env.APP_NAME,                   // eslint-disable-line
+    };
+
+    if (addTime) { out.timestamp = (new Date()).toISOString(); }
+    if (!!_ctx) { out.ctx = _ctx; }
+
+    logFns[level](out);
   };
 }
 
 class Logger {
 
-  private readonly logger: (level: LogLevel, ...params: any[]) => void;
+  private readonly _isDebuging = !!process.execArgv.join().includes("inspect") || !!process.env.JEST_WORKER_ID;
 
-  constructor(module: string, private level: LogLevel, logger: ILogFn = undefined) {
-    this.logger = logger || consoleLogger(module);
+  constructor(module: string,
+    private _level: LogLevel,
+    private readonly _logFn?: ILogFn) {
+    if (!_logFn) {
+      const json = process.env.LOG_FORMAT === "json" || process.argv.includes("-json") || process.argv.includes("--json");
+      this._logFn = json ? jsonLogger(module) : rawLogger(module);
+    }
+
   }
 
   setLevel(level: LogLevel): LogLevel {
-    const lvl = this.level;
-    this.level = level;
+    const lvl = this._level;
+    this._level = level;
     return lvl;
   }
 
-  debug(...params: any[]) {
-    if (this.level <= LogLevel.debug) {
-      this.logger(LogLevel.debug, ...params);
+  debug(...params: unknown[]) {
+    if (this._level <= LogLevel.debug) {
+      this._logFn(LogLevel.debug, ...params);
     }
   }
 
-  trace(...params: any[]) {
-    if (this.level <= LogLevel.trace) {
-      this.logger(LogLevel.trace, ...params);
+  trace(...params: unknown[]) {
+    if (this._level <= LogLevel.trace) {
+      this._logFn(LogLevel.trace, ...params);
     }
   }
 
-  info(...params: any[]) {
-    if (this.level <= LogLevel.info) {
-      this.logger(LogLevel.info, ...params);
+  info(...params: unknown[]) {
+    if (this._level <= LogLevel.info) {
+      this._logFn(LogLevel.info, ...params);
     }
   }
 
-  warn(...params: any[]) {
-    if (this.level <= LogLevel.warn) {
-      this.logger(LogLevel.warn, ...params);
+  warn(...params: unknown[]) {
+    if (this._level <= LogLevel.warn) {
+      this._logFn(LogLevel.warn, ...params);
     }
   }
 
-  error(...params: any[]) {
-    if (this.level <= LogLevel.error) {
-      this.logger(LogLevel.error, ...params);
+  error(...params: unknown[]) {
+    if (this._level <= LogLevel.error) {
+      this._logFn(LogLevel.error, ...params);
     }
   }
 
-  critical(...params: any[]) {
-    if (this.level <= LogLevel.critical) {
-      this.logger(LogLevel.critical, ...params);
-    }
+  critical(...params: unknown[]) {
+    this._logFn(LogLevel.critical, ...params);
   }
 
-  assert(cond: boolean, ...params: any[]) {
+  assert(cond: boolean, ...params: unknown[]) {
     if (!(cond)) {
-      if (process.env.DEBUG) {
-        throw new Error('[ASSERTION FAILED]');
-      }
-      this.logger(LogLevel.critical, '[ASSERTION FAILED]', ...params);
+      const err = `[ASSERTION FAILED] ${format(...params)}`;
+      this._logFn(LogLevel.critical, err);
+      throw new Error(err);
     }
   }
 }
 
 const logmap = new Map<string, Logger>();
 
-export function getLogger(logName = '', level = LogLevel.warn, logger: ILogFn = undefined) {
+export function getLogger(logName = "", level = LogLevel.warn, logger: ILogFn = undefined) {
+
+  logName = logName || (cluster.isWorker ? cluster.worker.id.toString() : "");
 
   let log = logmap.get(logName);
   if (!log) {
@@ -99,10 +125,53 @@ export function getLogger(logName = '', level = LogLevel.warn, logger: ILogFn = 
 }
 
 // shorthands to global logger
-export const trace = (...params: any[]) => { getLogger().trace(...params); };
-export const debug = (...params: any[]) => { getLogger().debug(...params); };
-export const info = (...params: any[]) => { getLogger().info(...params); };
-export const warn = (...params: any[]) => { getLogger().warn(...params); };
-export const error = (...params: any[]) => { getLogger().error(...params); };
-export const critical = (...params: any[]) => { getLogger().critical(...params); };
-export const assert = (cond: boolean, ...params: any[]) => { getLogger().assert(cond, ...params); };
+const gLogger = getLogger();
+export const trace = (...params: unknown[]) => { gLogger.trace(...params); };
+export const debug = (...params: unknown[]) => { gLogger.debug(...params); };
+export const info = (...params: unknown[]) => { gLogger.info(...params); };
+export const log = (...params: unknown[]) => { gLogger.info(...params); };
+export const warn = (...params: unknown[]) => { gLogger.warn(...params); };
+export const error = (...params: unknown[]) => { gLogger.error(...params); };
+export const critical = (...params: unknown[]) => { gLogger.critical(...params); };
+export const assert = (cond: boolean, ...params: unknown[]) => { gLogger.assert(cond, ...params); };
+
+
+
+export function hookConsole() {
+  if (!hooked) {
+    hooked = {};
+    const con = globalThis.console || require('console');   // eslint-disable-line
+    hooked.trace = Object(con).trace;
+    Object(con).trace = trace;
+    hooked.debug = Object(con).debug;
+    Object(con).debug = debug;
+    hooked.info = Object(con).info;
+    Object(con).info = info;
+    hooked.log = Object(con).log;
+    Object(con).log = log;
+    hooked.warn = Object(con).warn;
+    Object(con).warn = warn;
+    hooked.error = Object(con).error;
+    Object(con).error = error;
+    hooked.critical = Object(con).critical;
+    Object(con).critical = critical;
+    hooked.assert = Object(con).assert;
+    Object(con).assert = assert;
+    Object.freeze(hooked);
+  }
+}
+
+export function unhookConsole() {
+  if (hooked) {
+    const con = globalThis.console || require('console');   // eslint-disable-line
+    Object(con).trace = hooked.trace;
+    Object(con).debug = hooked.debug;
+    Object(con).info = hooked.info;
+    Object(con).log = hooked.log;
+    Object(con).warn = hooked.warn;
+    Object(con).error = hooked.error;
+    Object(con).critical = hooked.critical;
+    Object(con).assert = hooked.assert;
+    hooked = undefined;
+  }
+}

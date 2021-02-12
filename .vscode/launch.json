@@ -27,11 +27,11 @@
             "type": "node",
             "request": "launch",
             "args": [
-                "${workspaceRoot}/src/app.ts"
+                "${workspaceRoot}/src",
+                "job", "src/jobs/app"
             ],
             "runtimeArgs": [
                 "--nolazy",
-                "-r", "ts-node/register"
             ],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
@@ -41,16 +41,33 @@
             ]
         },
         {
-            "name": "Debug pm2",
+            "name": "Debug cluster",
             "type": "node",
             "request": "launch",
-            "program": "${workspaceFolder}/node_modules/pm2/bin/pm2-dev",
             "args": [
-                "start", "${workspaceFolder}/src/index.js", 
-              //  "--no-autorestart", "--no-daemon",
-              "--node-args=\"--inspect-brk\"",
+                "${workspaceRoot}/src",
+                "cluster", "cluster.config.js",
             ],
             "runtimeArgs": [
+                "--nolazy",
+            ],
+            "sourceMaps": true,
+            "cwd": "${workspaceRoot}",
+            "protocol": "inspector",
+            "skipFiles": [
+                "<node_internals>/**"
+            ]
+        },
+        {
+            "name": "Debug job",
+            "type": "node",
+            "request": "launch",
+            "args": [
+                "${workspaceRoot}/src/index.js",
+                "job", "src/jobs/exampleJob",
+            ],
+            "runtimeArgs": [
+                "--nolazy",
             ],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
@@ -70,10 +87,15 @@
             "type": "node",
             "request": "launch",
             "program": "${workspaceFolder}/node_modules/.bin/jest",
+            "autoAttachChildProcesses": true,
             "args": [
-                "--runInBand",
+                "--runInBand", "--detectOpenHandles", "--verbose",
+                //"--coverage=true", "--collectCoverageOnlyFrom", "['${relativeFileDirname}/**']",
                 "--findRelatedTests", "${relativeFile}"
             ],
+            "runtimeArgs": [
+                "--unhandled-rejections=strict"
+             ],
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen",
             "disableOptimisticBPs": true,
@@ -87,7 +109,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/node_modules/.bin/jest",
             "args": [
-                "--runInBand",
+                "--runInBand","--detectOpenHandles", "--verbose",
                 "--watch", "--coverage"
             ],
             "console": "integratedTerminal",

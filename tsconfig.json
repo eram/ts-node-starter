@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
       "module": "commonjs",
-      "target": "es2019",
+      "target": "ES2020",
       "noImplicitAny": true,
       "outDir": "./dist",
       "sourceMap": true,
@@ -9,10 +9,16 @@
       "downlevelIteration": true,      
       "experimentalDecorators": true,
       "emitDecoratorMetadata": true,
-      "skipLibCheck": true
+      "skipLibCheck": true,
+      "resolveJsonModule": true
     },
     "include": [
-      "src/**/*"
+      "src/**/*",
+      "*.config.js", 
+      "src/**/index.js",
+      "scripts/*.js",
+      "scripts/*.ts", 
+      "old/**/*",
     ],
     "paths": {
       "*": [

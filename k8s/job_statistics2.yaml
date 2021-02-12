@@ -1,0 +1,32 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: stats-l-2-consolidate
+  namespace: {{namespace}}
+spec:
+   ## run every 5 min
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          activeDeadlineSeconds: 1200
+          restartPolicy: Never
+          containers:
+            - name: stats-l-2-consolidate
+              image: 066879069397.dkr.ecr.us-east-1.amazonaws.com/zoomd-etlservices:{{version}}
+              command: ["/bin/bash", "-c", "node src/jobs/statistics"]
+              envFrom:
+                - secretRef:
+                    name: etlservices-secret
+                - configMapRef:
+                    name: etlservices-config
+              env:
+                - name: STAT_LEVEL
+                  value: "2"
+                - name: CONSOLIDATE_FROM_AGO_HOUR
+                  value: "-24"
+      backoffLimit: 0
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1

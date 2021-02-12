@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: etlservices
+  namespace: {{namespace}}
+  annotations:
+    buildRequestedBy: {{requestedby}}
+    buildReason: {{buildreason}}
+    branch: {{branch}}
+    lastCommit: "https://dev.azure.com/zoomd/Project-N/_git/Project-N/commit/{{lastCommit}}"
+    authorCommit: {{authorCommit}}
+    deployedVersion: "{{version}}"
+    deployedBy: {{RELEASE_DEPLOYMENT_REQUESTEDFOR}}
+    deployedDate: {{RELEASE_DEPLOYMENT_STARTTIME}}
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: etlservices
+  template:
+    metadata:
+      labels:
+        app: etlservices
+    spec:
+      containers:
+        - name: etlservices
+          image: 066879069397.dkr.ecr.us-east-1.amazonaws.com/zoomd-etlservices:{{version}}
+          ports:
+            - containerPort: 8104
+          resources:
+            limits:
+              memory: "2048Mi"
+              cpu: "250m"
+            requests:
+              memory: "512Mi"
+              cpu: "50m"
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          envFrom:
+            - secretRef:
+                    name: etlservices-secret
+            - configMapRef:
+                    name: etlservices-config
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8104
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 2
