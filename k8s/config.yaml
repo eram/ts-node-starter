@@ -1,67 +1,19 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: etlservices-config
+  name: ts-node-starter-config
   namespace: {{namespace}}
 data:
   #### app ###
   PORT: "8104"
   HOST: "0.0.0.0"
-  SkipTrustedServerAuth: "false"
-  SkipTrustedClientAuth: "false"
-  useWebSockets: "true"
-  ServerAuthPrivateKey: "iris-private-key"
-  S3_NOTIFICATION_BUCKET: "bucket-notifications-format"
-  PROTOCOL: "http"
 
-  API_HOST: "api{{env_prefix}}console.zoomd.com"
-  API_URL: "http://api-service:8100/api/v1"
-  SSO_URL: "https://sso{{env_prefix}}console.zoomd.com"
-  AGENCY_URL: "https://app{{env_prefix}}console.zoomd.com"
-  ADMIN_URL: "https://admin{{env_prefix}}console.zoomd.com"
-  WHITELIST: '["https://admin{{env_prefix}}console.zoomd.com","https://admin{{env_prefix}}console.zoomd.com","https://sso{{env_prefix}}console.zoomd.com","http://sso{{env_prefix}}console.zoomd.com","http://app{{env_prefix}}console.zoomd.com","https://app{{env_prefix}}console.zoomd.com","http://api-service:8100"]'
-  ### TODO - update urls
-  TRACK_URL: "http://localhost:9888"
+  DB_NAME: "{{DB_NAME}}"
+  DB_HOST: "{{DB_HOST}}"
+  DB_PORT: "{{DB_PORT}}"
+  DB_DIALECT: "{{DB_DIALECT}}"
 
-  ### redis ###
-  Zoomd.Cache.Port: "6379"
-  Zoomd.Cache.Server: "prod-zdredis.redis.cache.windows.net"
-  Zoomd.Cache.Password: "mDwWozSUonshMzFDI57mTuvt7bBi5esYnYVQQt+XIgE="
-
-  ### sql ###
-  DB_NAME: "{{db_name}}"
-  DB_HOST: "10.17.34.41"
-  DB_PORT: "3306"
-  DB_DIALECT: "mysql"
-  DB_TYPE: "memsql"
-  
-  S3_BUCKET_LOCATION: "us-east-1"
-  S3_BUCKET_NAME: "bucket-multimedia{{bucket_suffix}}"
-  S3_BUCKET_VIDEO_NAME: "bucket-multimedia-video{{bucket_suffix}}"
-  S3_BUCKET_THUMBNAIL_NAME: "bucket-multimedia-resize{{bucket_suffix}}"
-  AWS_REGION: "us-east-1"
   RELEASE_ID: "{{RELEASE_ID}}"
-  MEDIA_PROCESS_PATH: "http://multimedia-service:8101"
-
-  ### jwt
-  JWT_TOKEN_SECRET: "1011011101-uoghehtt-FHDGFUIKHF-11001010101"
-  JWT_AGENCY_TOKEN_SECRET: "10100001-qiouerd-GFHDKEE-10011101"
-
-  ### email - ###
-  # TODO need to update for zoomd provider
-  MAIL_FROM: "The Zoomd Team <customer.success@zoomd.com>"
-  MAIL_HOST: "mail.authsmtp.com"
-  MAIL_PORT: "465"
-  MAIL_TLS: "1"
-
-  ### MISC ###
-  RUN_SETUP: "0"
-  DEV_NOTIFICATIONS: "1"
-  DEV_NOTIFICATION_SOUNDS: "1"
-  
-  ### Logger
-  LOG_LEVEL: "3"
-  CORALOGIX_APIKEY: "98d36d56-a8ff-75a6-1fd2-389a76edf768"
-  LOG_ADD_TIME: "false"
-  NEWRELIC_APIKEY: "4ce0c3d5197802cf3d5f9368bcbd62940a2a37267329a37"
-  MODULE_NAME: "saas_api"
+  PUBLIC_URL: "{{PUBLIC_URL}}"
+  LOG_LEVEL: "warn"
+  MODULE_NAME: "ts-node-starter"

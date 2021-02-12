@@ -1,10 +1,10 @@
 apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
-  name: import-video-xls
+  name: ts-node-starter-example-job
   namespace: {{namespace}}
 spec:
-   ## run every 5 min (once at 23:55 -> "55 23 * * *")
+  ## run every 5 min (once at 23:55 -> "55 23 * * *")
   schedule: "*/5 * * * *"
   concurrencyPolicy: Forbid
   jobTemplate:
@@ -14,17 +14,18 @@ spec:
           activeDeadlineSeconds: 1200
           restartPolicy: Never
           containers:
-            - name: import-video-xls
-              image: 066879069397.dkr.ecr.us-east-1.amazonaws.com/zoomd-etlservices:{{version}}
-              command: ["/bin/bash", "-c", "node src/jobs/importVideoXLS"]
+            - name: ts-node-starter-example-job
+              image: "{{image}}:{{version}}"
+              command: ["/bin/bash", "-c", "node src job src/jobs/exampleJob"]
               envFrom:
                 - secretRef:
-                    name: etlservices-secret
+                    name: ts-node-starter-secret
                 - configMapRef:
-                    name: etlservices-config
+                    name: ts-node-starter-config
               env:
                 - name: optional_var_name
                   value: some value
       backoffLimit: 0
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 1
+
