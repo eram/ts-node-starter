@@ -51,11 +51,12 @@ class LoadEnv {
 
 
   print(logger = getLogger()) {
-    const { APP_NAME, HOSTNAME, NODE_ENV, LOG_LEVEL } = process.env;
+    const { APP_NAME, HOSTNAME, NODE_ENV, LOG_LEVEL, POD_NAME, POD_NAMESPACE } = process.env;
     logger.info(`
 -----------------
 App: ${APP_NAME}
 Version: ${this.version}, ReleaseId: ${this.releaseId}
+Namespace: ${POD_NAMESPACE}, Pod: ${POD_NAME}
 Host: ${HOSTNAME}, Node version: ${this.nodeVer}
 Process: ${process.pid}, workerId: ${this.workerId}
 NODE_ENV: ${NODE_ENV}, cwd: ${process.cwd()}

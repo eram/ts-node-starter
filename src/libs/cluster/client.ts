@@ -1,6 +1,6 @@
 import cluster from "cluster";
 import { initMaster } from "./master";
-import { apm, assert, info } from "../../utils";
+import { apm, assert, getLogger, info } from "../../utils";
 import { LocalMaster } from "./localMaster";
 import * as os from "os";
 import { Bridge, Packet, PktData } from "./bridge";
@@ -32,7 +32,7 @@ export function initClient(): Bridge {
       clientId: cluster.worker.id,
       send: (packat: Packet) => process.send(packat),     // send to cluster
       onPkt: (cb: (packet: Packet) => void) => process.on("message", cb),
-    });
+    }, getLogger());
 
   } else {
 
@@ -42,7 +42,7 @@ export function initClient(): Bridge {
     bus.master.addCallback(LocalMaster.apmHandler.bind(bus.master));
     client = bus.client;
 
-    if (process.env.BRIDGE_TESTING){
+    if (process.env.BRIDGE_TESTING) {
       // hack for unit testing: memory leak here!
       Object(client).master = bus.master;
     }

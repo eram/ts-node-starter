@@ -4,6 +4,7 @@
 // See discussion for details: https://github.com/Microsoft/TypeScript-wiki/blob/master/Breaking-Changes.md#extending-built-ins-like-error-array-and-map-may-no-longer-work
 //
 import * as os from "os";
+import { merge } from "./copyIn";
 
 export class CustomError extends Error {
 
@@ -25,7 +26,7 @@ export class CustomError extends Error {
 //
 // get the error string of the input errno
 //
-export const errno = Object.assign({
+export const errno = merge({
   getStr(_errno: number) {
     for (const key in this) {
       if (this[key] === _errno) return key;

@@ -5,6 +5,7 @@ import { URL } from "url";
 import { IDictionary, signToken, verifyToken } from "../utils";
 import { requireAuthorization } from "../middleware/authorization";
 import { User } from "../models";
+import * as Cookies from "cookies";
 
 const inProgress: IDictionary = {};
 
@@ -13,6 +14,7 @@ let graphqlService: string;
 let githubClientId: string;
 let githubSecret: string;
 
+const MAX_USER_TOKENS = Number(process.env.MAX_USER_TOKENS) || 10;
 
 function authorize(ctx: Koa.Context) {
   // redirect to github oauth service
@@ -37,29 +39,32 @@ async function getToken(code: string) {
   url.searchParams.set("client_secret", `${githubSecret}`);
   url.searchParams.set("code", `${code}`);
 
-  let res = await axios.get(url.href);
-  let body = res?.data || {};
-  const accessToken = body.access_token;
+  let resp = await axios.get(url.href, {
+    headers: { Accept: "application/json" },        // eslint-disable-line
+  });
+  const data = resp?.data;
+  const accessToken = data.access_token;
 
-  if (!res || res.status !== 200 || !!body.error) {
-    const msg = body.error_description || res?.statusText || res || "";
-    throw new Error(`failed in fetching token. ${msg}`);
+  if (resp.status !== 200 || !!resp.data?.errors || !accessToken) {
+    const msg = resp.statusText || resp.data?.errors || `status: ${resp.status}`;
+    throw new Error(`failed in fetching token: ${msg}`);
   }
 
   // get username
-  res = await axios.post(graphqlService, {
-    body: JSON.stringify({ query: "{viewer{login}}" }),
-    headers: {
-      Accept: "application/json",                 // eslint-disable-line
-      Authorization: `bearer ${accessToken}`,     // eslint-disable-line
-    },
-  });
+  resp = await axios.post(graphqlService,
+    JSON.stringify({ query: "{viewer{login}}" }),
+    {
+      headers: {
+        Accept: "application/json",                 // eslint-disable-line
+        Authorization: `bearer ${accessToken}`,     // eslint-disable-line
+      },
+    });
 
-  // RESPONSE BODY LOOKS LIKE THIS...
+  // RESPONSE DATA LOOKS LIKE THIS...
   // {
   //   "data": {
   //     "viewer": {
-  //       "sso": "eram",
+  //       "login": "eram",
   //       "id": "MDQ6VXNlcjEwNDUzNzc="
   //     }
   //   }
@@ -73,10 +78,10 @@ async function getToken(code: string) {
   //    }]
   // }
 
-  body = res?.data || {};
-  const username = String(body?.data?.viewer?.login);
-  if (!res || res.status !== 200 || !!body.errors || !username || username.length < 3) {
-    throw new Error("failed in fetching user " + (res ? res.statusText : ""));
+  const username = String(resp.data?.data?.viewer?.login || "");
+  if (resp.status !== 200 || !!resp.data?.errors || !username || username.length < 3) {
+    const msg = resp.statusText || resp.data?.errors[0]?.message || `status: ${resp.status}`;
+    throw new Error(`failed in fetching user: ${msg}`);
   }
 
   // make sure this user is not blocked
@@ -88,9 +93,13 @@ async function getToken(code: string) {
   // add valid token
   const token = signToken({ user: username });
   const claims = verifyToken(token);
-  user.validTokens.push(claims.iat);
+  user.validTokens.unshift(claims.iat);
+  while (user.validTokens.length > MAX_USER_TOKENS) {
+    user.validTokens.pop();
+  }
+  user.isNewRecord = false;
   await user.save();
-  return token;
+  return { token, claims };
 }
 
 async function login(ctx: Koa.Context, _next: Koa.Next): Promise<void> {
@@ -110,14 +119,27 @@ async function login(ctx: Koa.Context, _next: Koa.Next): Promise<void> {
   ctx.assert(!!code, 400, "missing code in request body");
 
   try {
-    const token = await getToken(code);
-    url.search = `?token=${encodeURIComponent(token)}`;
+    const { token, claims } = await getToken(code);
+
+    // set cookie
+    const opts: Cookies.SetOption = {
+      expires: new Date(claims.exp * 1000),
+      secure: (process.env.NODE_ENV === "production"),
+      httpOnly: true,
+      sameSite: "strict",
+      overwrite: true,
+    };
+    ctx.cookies.set("token", token, opts);
+
+    // this will inform frontend that we're logged-in
+    url.searchParams.set("user", claims.user);
+    url.searchParams.set("exp", claims.exp?.toString());
+
   } catch (err) {
-    url.search = `?error=${encodeURIComponent(err.message || err)}`;
+    url.searchParams.set("error", err.message || JSON.stringify(err));
   }
 
   // redirect back to client page
-  url.pathname = `${process.env.PUBLIC_URL}/sso`;
   ctx.redirect(url.href);
 }
 
@@ -135,24 +157,39 @@ async function refresh(ctx: Koa.Context, _next: Koa.Next) {
   const token = signToken({ user: username });
   const claims = verifyToken(token);
 
-  // replace valid token
+  // replace valid token in db and cleanup expired tokens
   user.validTokens = user.validTokens.map(iat => (iat === ctx.state.jwt?.iat) ? claims.iat : iat);
   user.isNewRecord = false;
   await user.save();
 
-  ctx.body = { token };
+  // replace cookie
+  const opts: Cookies.SetOption = {
+    expires: new Date(claims.exp * 1000),
+    secure: (process.env.NODE_ENV === "production"),
+    httpOnly: true,
+    sameSite: "strict",
+    overwrite: true,
+  };
+  ctx.cookies.set("token", token, opts);
+
+  // respond with the new token so it can be used to access other servers on the same cluster
+  ctx.body = { token, user: username, expires: claims.exp * 1000 };
   ctx.status = 200;
   ctx.type = "json";
 }
 
 async function revoke(ctx: Koa.Context, _next: Koa.Next) {
 
-  // remove valid token
+  // remove valid token in db
   const username = ctx.state.user;
   const user = await User.findOne({ where: { username } });
+  ctx.assert(!!user, 401, "invalid user");
+
   user.isNewRecord = false;
   user.validTokens = user.validTokens.filter(iat => (iat !== ctx.state.jwt?.iat));
   await user.save();
+
+  ctx.cookies.set("token"); // expire this cookie now
 
   ctx.status = 200;
   ctx.set("Cache-Control", "no-cache");
@@ -170,7 +207,7 @@ export function init(router: joiRouter.Router, opts: {
   githubSecret?: string;
 } = {}) {
 
-  authService = opts.authService || "https://github.com/sso/github/oauth";
+  authService = opts.authService || "https://github.com/login/oauth";
   graphqlService = opts.graphqlService || "https://api.github.com/graphql";
   githubClientId = opts.githubClientId || process.env.OAUTH_GITHUB_CLIENT_ID;
   githubSecret = opts.githubSecret || process.env.OAUTH_GITHUB_SECRET;

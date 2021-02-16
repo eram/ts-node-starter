@@ -52,6 +52,7 @@
     "@typescript-eslint/consistent-type-imports": "off",
     "@typescript-eslint/prefer-enum-initializers": "off",
     "@typescript-eslint/no-implicit-any-catch": "off",
+    "@typescript-eslint/unbound-method": ["error", { "ignoreStatic": true }],
     "semi": "off",
     "@typescript-eslint/semi": ["error"],
     "comma-spacing": "off",

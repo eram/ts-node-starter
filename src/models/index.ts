@@ -1,2 +1,2 @@
-export * from "./sequlize";
+export * from "./db";
 export * from "./user.model";

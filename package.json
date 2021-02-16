@@ -19,6 +19,7 @@
     "dev:cluster": "ts-node-dev --respawn --transpile-only --exit-child --rs --inspect -- src cluster ./cluster.config.js",
     "start": "node src cluster ./cluster.config.js",
     "start:node": "node src job src/jobs/app",
+    "start:dev": "npm run dev",
     "createDb": "node src job src/jobs/createDb",
     "build": "npm run clean && tsc"
   },
@@ -38,6 +39,7 @@
     "@types/koa__cors": "^3.0.2",
     "@types/node": "^12.19.11",
     "axios": "^0.21.1",
+    "chalk": "^4.1.0",
     "commander": "^6.2.1",
     "dotenv": "^8.2.0",
     "jest": "^26.6.3",

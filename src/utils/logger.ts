@@ -3,13 +3,14 @@ import { format } from "util";
 import * as cluster from "cluster";
 import process from "process";
 import { IDictionary, POJO } from ".";
+import { gray, blueBright, red } from "chalk";
 
 // this enum must match with CoralogixLogger.Severity
 export enum LogLevel { debug = 1, trace = 2, info = 3, warn = 4, error = 5, critical = 6 }
-
 export type ILogFn = (level: LogLevel, ...params: unknown[]) => void;
 
 let hooked: IDictionary<(message?: unknown, ...optionalParams: unknown[]) => void>;
+const logmap = new Map<string, Logger>();
 
 function rawLogger(_ctx: string) {
 
@@ -17,9 +18,10 @@ function rawLogger(_ctx: string) {
   const ctx = (_ctx && _ctx.length) ? `[${_ctx}] ` : "";
   const { assert, debug, trace, info, warn, error } = (!!hooked) ? hooked : console;    // eslint-disable-line
   const logFns = [assert, debug, trace, info, warn, error, error];
+  const chalks = [red, gray, gray, blueBright, blueBright, red, red];
 
   return (level: LogLevel, ...params: unknown[]) => {
-    const prefix = `${(addTime ? (new Date()).toISOString() + " " : "")}${ctx}${params[0]}`;
+    const prefix = chalks[level](`${(addTime ? (new Date()).toISOString() + " " : "")}${ctx}${params[0]}`);
     params[0] = prefix;
     logFns[level](...params);
   };
@@ -47,11 +49,9 @@ function jsonLogger(_ctx: string) {
   };
 }
 
-class Logger {
+export class Logger {
 
-  private readonly _isDebuging = !!process.execArgv.join().includes("inspect") || !!process.env.JEST_WORKER_ID;
-
-  constructor(module: string,
+  protected constructor(module: string,
     private _level: LogLevel,
     private readonly _logFn?: ILogFn) {
     if (!_logFn) {
@@ -59,6 +59,18 @@ class Logger {
       this._logFn = json ? jsonLogger(module) : rawLogger(module);
     }
 
+  }
+
+  static getLogger(logName = "", level = LogLevel.warn, logger: ILogFn = undefined) {
+
+    logName = logName || (cluster.isWorker ? cluster.worker.id.toString() : "");
+
+    let log = logmap.get(logName);
+    if (!log) {
+      log = new Logger(logName, level, logger);
+      logmap.set(logName, log);
+    }
+    return log;
   }
 
   setLevel(level: LogLevel): LogLevel {
@@ -110,21 +122,8 @@ class Logger {
   }
 }
 
-const logmap = new Map<string, Logger>();
-
-export function getLogger(logName = "", level = LogLevel.warn, logger: ILogFn = undefined) {
-
-  logName = logName || (cluster.isWorker ? cluster.worker.id.toString() : "");
-
-  let log = logmap.get(logName);
-  if (!log) {
-    log = new Logger(logName, level, logger);
-    logmap.set(logName, log);
-  }
-  return log;
-}
-
 // shorthands to global logger
+export const getLogger = Logger.getLogger;
 const gLogger = getLogger();
 export const trace = (...params: unknown[]) => { gLogger.trace(...params); };
 export const debug = (...params: unknown[]) => { gLogger.debug(...params); };
@@ -134,7 +133,6 @@ export const warn = (...params: unknown[]) => { gLogger.warn(...params); };
 export const error = (...params: unknown[]) => { gLogger.error(...params); };
 export const critical = (...params: unknown[]) => { gLogger.critical(...params); };
 export const assert = (cond: boolean, ...params: unknown[]) => { gLogger.assert(cond, ...params); };
-
 
 
 export function hookConsole() {

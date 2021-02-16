@@ -53,7 +53,7 @@ describe("oauthGithub tests", () => {
     expect(ctx.redirect).toHaveBeenCalled();
   });
 
-  const commonLogin = async () => {
+  const commonLogin1 = async () => {
     let state = "";
     const ctx: Partial<Koa.Context> = {
       href,
@@ -72,7 +72,7 @@ describe("oauthGithub tests", () => {
   };
 
   const commonLogin2 = async (state: string) => {
-    let token = "";
+    let user = "";
     const url = new URL(`http://a.local/jest?code=1&state=${state}`);
     const ctx: Partial<Koa.Context> = {
       href: url.href,
@@ -80,10 +80,11 @@ describe("oauthGithub tests", () => {
       redirect: jest.fn((uri) => {
         expect(uri).toBeTruthy();
         const url2 = new URL(uri);
-        token = url2.searchParams.get("token") || "";
+        user = url2.searchParams.get("user") || "";
       }),
       get: jest.fn((str) => { expect(str).toBeTruthy(); return undefined; }),
       assert: ((v: boolean, status?: number, err?: string) => { if (!v) throw new Error(err); }) as never,
+      cookies: { set: jest.fn((name, val, _opts) => { expect(name && val).toBeTruthy(); return ctx; }) } as never,
     };
     const params = new URLSearchParams(url.search);
     for (const k of params) {
@@ -92,12 +93,12 @@ describe("oauthGithub tests", () => {
 
     await oauth.login(ctx as Koa.Context, async () => Promise.resolve());
     expect(ctx.redirect).toBeCalled();
-    return token;
+    return user;
   };
 
   test("github positive flow", async () => {
 
-    const state = await commonLogin();
+    const state = await commonLogin1();
     expect(state.length > 0).toBeTruthy();
 
     // Oauth.authService
@@ -120,8 +121,8 @@ describe("oauthGithub tests", () => {
       },
     }));
 
-    const token = await commonLogin2(state);
-    expect(token.length).toBeGreaterThan(4);
+    const user = await commonLogin2(state);
+    expect(user).toEqual("test");
 
     expect(mock1).toHaveBeenCalled();
     mock1.mockClear();
@@ -131,7 +132,7 @@ describe("oauthGithub tests", () => {
 
   test("github negative: blocked user", async () => {
 
-    const state = await commonLogin();
+    const state = await commonLogin1();
     expect(state.length > 0).toBeTruthy();
 
     // Oauth.authService
@@ -164,7 +165,7 @@ describe("oauthGithub tests", () => {
   });
 
   test("github missing code from service", async () => {
-    const state = await commonLogin();
+    const state = await commonLogin1();
     expect(state.length > 0).toBeTruthy();
 
     const token = await commonLogin2("");
@@ -173,7 +174,7 @@ describe("oauthGithub tests", () => {
 
   test("github service is down", async () => {
 
-    const state = await commonLogin();
+    const state = await commonLogin1();
     expect(state.length > 0).toBeTruthy();
 
     const mock1 = jest.spyOn(axios, "get").mockReturnValue(Promise.resolve({
@@ -194,7 +195,7 @@ describe("oauthGithub tests", () => {
 
   test("github service invalid code", async () => {
 
-    const state = await commonLogin();
+    const state = await commonLogin1();
     expect(state.length > 0).toBeTruthy();
 
     // Oauth.authService
@@ -224,7 +225,7 @@ describe("oauthGithub tests", () => {
 
   test("github service invalid token", async () => {
 
-    const state = await commonLogin();
+    const state = await commonLogin1();
     expect(state.length > 0).toBeTruthy();
 
     // Oauth.authService
@@ -253,7 +254,7 @@ describe("oauthGithub tests", () => {
     mock2.mockClear();
   });
 
-  test("call refresh", async () => {
+  test("refresh positive", async () => {
     const ctx: Partial<Koa.Context> = {
       state: { user: "refresh", jwt: { iat: 0 } },
       href,
@@ -261,6 +262,7 @@ describe("oauthGithub tests", () => {
       get: jest.fn((str) => { expect(str).toBeTruthy(); return undefined; }),
       set: (jest.fn((str) => { expect(str).toBeTruthy(); })) as never,
       assert: ((v: boolean, _status?: number, err?: string) => { if (!v) throw new Error(err); }) as never,
+      cookies: { set: jest.fn((name, val, _opts) => { expect(name && val).toBeTruthy(); return ctx; }) } as never,
     };
 
     await oauth.refresh(ctx as Koa.Context, async () => Promise.resolve());
@@ -273,7 +275,7 @@ describe("oauthGithub tests", () => {
     expect(user.validTokens.length).toEqual(1);
   });
 
-  test("call refresh on blocked user", async () => {
+  test("refresh on blocked user fails", async () => {
     const ctx: Partial<Koa.Context> = {
       state: { user: "blocked", jwt: { iat: 0 } },
       href,
@@ -288,7 +290,7 @@ describe("oauthGithub tests", () => {
     ).rejects.toThrow(/blocked/);
   });
 
-  test("call revoke", async () => {
+  test("revoke positive", async () => {
     const ctx: Partial<Koa.Context> = {
       state: { user: "revoke", jwt: { iat: 1 } },
       href,
@@ -296,11 +298,13 @@ describe("oauthGithub tests", () => {
       get: jest.fn((str) => { expect(str).toBeTruthy(); return undefined; }),
       set: (jest.fn((str) => { expect(str).toBeTruthy(); })) as never,
       assert: ((v: boolean, _status?: number, err?: string) => { if (!v) throw new Error(err); }) as never,
+      cookies: { set: jest.fn((name, val, _opts) => { expect(val).toBeFalsy(); return ctx; }) } as never,
     };
 
     await oauth.revoke(ctx as Koa.Context, async () => Promise.resolve());
+    expect(ctx.cookies.set).toHaveBeenCalled();   // eslint-disable-line
 
-    // removed user cannot be refreshed
+    // revoked user cannot be refreshed
     await expect(
       oauth.refresh(ctx as Koa.Context, async () => Promise.resolve()),
     ).rejects.toThrow(/revoked/);

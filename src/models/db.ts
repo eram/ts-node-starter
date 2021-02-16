@@ -1,5 +1,5 @@
 import { Dialect, Sequelize, Options } from "sequelize";
-import { assert } from "../utils";
+import { assert, copyIn, error } from "../utils";
 import * as User from "./user.model";
 export { Sequelize, Options } from "sequelize";
 
@@ -11,7 +11,7 @@ export function initDb(opts: Options = {}) {
 
     const { DB_NAME, DB_USER, DB_PWD, DB_DIALECT, DB_HOST, DB_PORT, DB_STORAGE = "", DB_VERBOSE = "false" } = process.env;
 
-    const o = Object.assign({
+    const o = copyIn({
       database: DB_NAME,
       username: DB_USER,
       password: DB_PWD,
@@ -34,7 +34,7 @@ export function initDb(opts: Options = {}) {
 
     // intiinalize all models
     User.init(sequelize);
-    // ***
+    // ...
 
     // associate models async
     setImmediate(() => {
@@ -49,4 +49,18 @@ export function initDb(opts: Options = {}) {
   }
 
   return sequelize;
+}
+
+
+export async function checkDbAlive(){
+  try {
+    const count = await User.User.count();
+    return Number.isInteger(count);
+  } catch (err) {
+    error(err.message || err);
+    if (err.message === "SQLITE_ERROR: no such table: user") {
+      error("run 'node src src/jobs/createDb' to create the database.");
+    }
+    return false;
+  }
 }

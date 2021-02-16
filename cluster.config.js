@@ -26,6 +26,7 @@ module.exports = {
       //error_file: "./logs/app.log",
       //combine_logs: false,
 
+      /*** unsupported params ***/
       // exec_mode: "cluster",
       // min_uptime: 1000,
       // cron_restart: "1 0 * * *"

@@ -119,6 +119,4 @@ describe("authorization middleware", () => {
 
     expect(ctx.state.user).toEqual(user);
   });
-
-
 });

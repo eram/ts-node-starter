@@ -10,7 +10,7 @@ import { Sequelize } from "sequelize";
 import { env, getLogger, info, LogLevel } from "../../utils";
 import { errorHandler, koaOnError, setWarnRespTime } from "../../middleware/errorHandler";
 import { init as staticSite } from "../../middleware/staticSite";
-import { requireAuthorization } from "../../middleware/authorization";
+import { parseToken, requireAuthorization } from "../../middleware/authorization";
 import { init as openApiDocs } from "../../middleware/openApiDocs";
 import { init as healthcheck } from "../../controllers/healthcheck";
 import { init as oauthGitHub } from "../../controllers/oauthGithub";
@@ -27,11 +27,12 @@ function corsOptions(whitelist: string[]) {
   };
 }
 
+const { ROUTER_BASE_PATH, CORS_WHITELIST, NODE_ENV } = process.env;
 
 export function setupKoa(koa: Koa, client: Bridge, db: Sequelize) {
 
   const httpLogger = getLogger("http", LogLevel.info);
-  const whitelist: [] = !!process.env.CORS_WHITELIST ? JSON.parse(process.env.CORS_WHITELIST) : [];
+  const whitelist: [] = !!CORS_WHITELIST ? JSON.parse(CORS_WHITELIST) : [];
 
   // set app middleware
   koa.on("error", koaOnError)
@@ -42,7 +43,7 @@ export function setupKoa(koa: Koa, client: Bridge, db: Sequelize) {
   if (!env.isDebugging) {
     // no point in getting timeout warnings when debugging
     setWarnRespTime(Number.MAX_SAFE_INTEGER);
-    if (process.env.NODE_ENV === "production") {
+    if (NODE_ENV === "production") {
       // keep the network loggers with full-text responses
       koa.use(compress());
     }
@@ -55,6 +56,7 @@ export function setupKoa(koa: Koa, client: Bridge, db: Sequelize) {
 
   // setup public routes
   koa.use(staticSite("./public", "/"));
+  publicRouter.use(parseToken);
   healthcheck(publicRouter, db, client);
   oauthGitHub(publicRouter);
   openApiDocs(publicRouter);
@@ -63,7 +65,7 @@ export function setupKoa(koa: Koa, client: Bridge, db: Sequelize) {
 
   // setup private routes
   const routerV1 = createRouter();
-  routerV1.prefix("/api/v1");
+  routerV1.prefix(ROUTER_BASE_PATH);
   routerV1.use(requireAuthorization);
   // ...
 

@@ -4,19 +4,47 @@
 	<meta charset="utf-8" />
 	<link rel="icon" type="image/png" href="./favicon.png" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<meta name="theme-color" content="#000000" />
+	<meta name="theme-color" content="#FFFFFF" />
+	<title>ts-node-starter</title>
 </head>
 
 <body>
-	<p>ts-node-starter: hello world!</p>
-	<p>endpoints<br />
+	<h1>ts-node-starter</h1>
+	<p>endpoints:<br />
 	<ul>
 		<li><a href="/">public site</a></li>
 		<li><a href="/_healthcheck?apm=true">healthcheck with cluster apm</a></li>
 		<li><a href="/_openapi">openapi</a></li>
 		<li><a href="/_openapi.json">openapi.json</a></li>
+		<li><a href="/sso/github/authorize">login with github oauth</a></li>
+		<li><a href="javascript:refresh();">refresh token</a></li>
+		<li><a href="javascript:logout();">logout</a></li>
 	</ul>
 	</p>
+	<p><div>status: <div id="response"></div></div></p>
 </body>
+<script>
+	let response = document.getElementById("response");
+
+	function refresh() {
+		window.fetch("/sso/github/refresh")
+		.then(resp => resp.json())
+		.then(data => response.innerText = data.error || data.token || JSON.stringify(data))
+		.catch(error => response.innerText = error.message || JSON.stringify(error));
+	}
+
+	function logout() {
+		window.fetch("/sso/github/revoke")
+		.then(resp => resp.json())
+		.then(data => response.innerText = data.error || data.ok || JSON.stringify(data))
+		.catch(error => response.innerText = error.message || JSON.stringify(error));
+	}
+
+	const searchParams = (new URL(document.location)).searchParams;
+	const error = searchParams.get("error") || searchParams.get("user");
+	if (error) {
+		response.innerText = decodeURIComponent(error);
+	} 
+</script>
 
 </html>

@@ -1,4 +1,5 @@
 import { Worker as JsWorker } from "worker_threads";
+import { merge } from "./copyIn";
 import { POJO } from "./pojo";
 
 //
@@ -8,7 +9,7 @@ import { POJO } from "./pojo";
 
 export class Worker extends JsWorker {
   constructor(file: string, wkOpts: WorkerOptions & { workerData?: POJO }) {
-    const opts = Object.assign({ eval: true }, wkOpts);
+    const opts = merge({ eval: true }, wkOpts);
     opts.workerData = opts.workerData || {};
     opts.workerData._filename_ = file;
     super(

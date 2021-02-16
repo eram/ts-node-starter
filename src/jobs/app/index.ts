@@ -1,8 +1,8 @@
 import Koa from "koa";
 import { initClient } from "../../libs/cluster";
-import { initDb } from "../../models";
+import { initDb, checkDbAlive } from "../../models";
 import { setupKoa } from "./setupKoa";
-import { env, info, sleep } from "../../utils";
+import { env, errno, info } from "../../utils";
 import { apm } from "../../utils/apm";
 
 
@@ -12,12 +12,13 @@ export async function main() {
   env.print();
 
   const db = initDb();
+  if (!await checkDbAlive()) return errno.ENOENT;
+
   apm.reset();
   const client = initClient();
   const srv = setupKoa(new Koa(), client, db);
   srv.listen(port);
 
-  await sleep(100);
   info("server listerning on", process.env.PUBLIC_URL || `http://localhost:${port}`);
   return 0;
 }

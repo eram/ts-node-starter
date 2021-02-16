@@ -1,4 +1,4 @@
-import { env, errno, fs } from "./utils";
+import { env, errno, error, fs } from "./utils";
 import * as path from "path";
 import cluster from "cluster";
 import * as Command from "commander";
@@ -21,7 +21,7 @@ async function reloadEnv() {
     const filename = path.resolve(param);
 
     if (!await fs.exists(filename)) {
-      console.error("error: 'path' must be .env file");
+      error("error: 'path' must be .env file");
       process.exit(errno.EINVAL);
     }
     process.env.DOT_ENV_FILE = filename;
@@ -46,24 +46,6 @@ cmd
   .description("get app environment information.")
   .action(() => { env.print(); });
 
-/*
-cmd
-  .command("node", { isDefault: true })
-  .alias("n")
-  .description("run app in a single node.")
-  .action(async (param: string) => {
-
-    await reloadEnv();
-    param = param || "src/jobs/app";
-    const filename = path.resolve(param);
-    const script = require(filename);   // eslint-disable-line
-    if (!script) {
-      console.error("error: app failed to run");
-      process.exit(errno.EBADMSG);
-    }
-  });
-*/
-
 cmd
   .command("cluster <path>")
   .alias("c")
@@ -81,7 +63,7 @@ cmd
 
     const filename = path.resolve(param);
     if (!await fs.exists(filename)) {
-      console.error("File not found");
+      error("File not found");
       process.exit(errno.ENOENT);
     }
 
@@ -89,19 +71,19 @@ cmd
     const arr = !!pojo && pojo.apps;
 
     if (!Array.isArray(arr)) {
-      console.error("file is not a pm2 ecosystem file.");
+      error("file is not a pm2 ecosystem file.");
       process.exit(errno.EBADMSG);
     }
 
     const rc = await clusterStart(arr);
     if (rc) {
-      console.error("error:", errno.getStr(rc));
+      error("error:", errno.getStr(rc));
       process.exit(rc);
     }
   });
 
 cmd
-  .command("job <folder>")
+  .command("job <folder>", { isDefault: true })
   .alias("j")
   .description("run a job app in a single node.", {
     folder: "runnable folder",
@@ -111,21 +93,20 @@ cmd
     await reloadEnv();
     const filename = path.resolve(param, "index.ts");
     if (!await fs.exists(filename)) {
-      console.error("error: 'path' must be folder with index.ts file'");
+      error("error: 'path' must be folder with index.ts file'");
       process.exit(errno.ENOENT);
     }
 
     try {
       const script = require(filename);   // eslint-disable-line
       if (!script) {
-        console.error("error: job failed to run");
+        error("error: job failed to run");
         process.exit(errno.EBADMSG);
       }
     } catch (e) {
-      console.error("error in job script");
+      error("error in job script");
       throw e;
     }
   });
 
 cmd.parse(process.argv);
-

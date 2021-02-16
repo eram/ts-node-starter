@@ -33,6 +33,7 @@ describe("healthcheck middleware", () => {
     });
 
     const ctx: Partial<Koa.Context> = {
+      state: { user: "test user" },
       status: 0,
       body: {},
       set: setFn as never,  // 'set' is not assignable in d.ts. hack it.

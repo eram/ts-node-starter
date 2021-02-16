@@ -1,4 +1,5 @@
 import { DataTypes, Model, Sequelize } from "sequelize";
+import { copyIn } from "../utils";
 
 export class User extends Model {
 
@@ -15,7 +16,7 @@ export class User extends Model {
 
   constructor(user: Partial<User> = {}) {
     super();
-    Object.assign(this, user);
+    copyIn<User>(this, user);
   }
 }
 

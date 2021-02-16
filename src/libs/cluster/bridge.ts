@@ -1,4 +1,4 @@
-import { assert, CustomError, env, info, POJO } from "../../utils";
+import { CustomError, env, POJO, Logger } from "../../utils";
 
 type Dest = number | "bcast" | "master";                                    // destination worker.id
 type Msg = "apm" | "healthcheck" | "ping" | "pong" | "require" | "signal";  // see master.ts for details
@@ -12,7 +12,7 @@ export class PktData {
 }
 
 type Callback = (data: PktData, reply: (data: PktData) => void) => boolean;
-export class BridgeError extends CustomError {}
+export class BridgeError extends CustomError { }
 
 // transport object
 export class Packet<T extends PktData = PktData> {
@@ -42,7 +42,7 @@ export class Bridge {
   private readonly _callbacks = new Array<Callback>();
   private readonly _defTimeout = env.isDebugging ? 0 : 2000;
 
-  constructor(private readonly _port: IPort) {
+  constructor(private readonly _port: IPort, private readonly _log: Logger) {
 
     _port.onPkt((packet: Packet) => {
       // this is called when a packet arrives at the client/master
@@ -52,7 +52,7 @@ export class Bridge {
         // dispatch request
         delete packet._error;
         delete packet._data.error;
-        assert(!!this._callbacks.length, "no callbacks defined on Dispatcher");
+        _log.assert(!!this._callbacks.length, "no callbacks defined on Dispatcher");
         if (this._callbacks.length) {
           const handled = this._callbacks.some(cb => cb(packet._data, this._reply(packet)));
           if (!handled) {
@@ -119,7 +119,7 @@ export class Bridge {
         }, timeout, req._pktId);
       }
 
-      info(`request ${req._data.msg}`, req);
+      this._log.info(`request ${req._data.msg}`, req);
       this._port.send(req);
     });
   }
@@ -137,7 +137,7 @@ export class Bridge {
 
     const req = new Packet(this._port.clientId, to, data, false);
 
-    info(`post ${req._data.msg}`, req);
+    this._log.info(`post ${req._data.msg}`, req);
     this._port.send(req);
   }
 
@@ -164,7 +164,7 @@ export class Bridge {
         const reply = new Packet(
           packet._dest === "bcast" ? "master" : packet._dest,
           packet._source, data, false, packet._pktId);
-        info(`reply ${reply._data.msg}`, reply);
+        this._log.info(`reply ${reply._data.msg}`, reply);
         this._port.send(reply);
       }
     };

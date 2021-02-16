@@ -93,6 +93,10 @@ async function handler(ctx: Koa.Context, _next: Koa.Next) {
   if (err) {
     ctx.body.error = err.message;
   }
+
+  if (ctx.state?.user) {
+    ctx.body.user = ctx.state.user;
+  }
 }
 
 export function init(router: joiRouter.Router, db_: Sequelize, client_: Bridge) {

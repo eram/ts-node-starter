@@ -1,4 +1,5 @@
 import { IDictionary, env, assert } from "./";
+import { copyIn, merge as merge1 } from "./copyIn";
 
 const counters: IDictionary<Counter> = {};
 const meters: IDictionary<Meter> = {};
@@ -356,9 +357,7 @@ export class Meter extends MeterParams implements IApm<MeterParams> {
 
   merge(other: Partial<MeterParams>) {
 
-    ["_tickInterval", "_seconds", "_timeframe", "_debug"].forEach(key => {
-      if (typeof Object(other)[key] !== "undefined") Object(this)[key] = Object(other)[key];
-    });
+    copyIn<Meter>(this, other, ["_rate"]);
 
     if (other._rate) {
       this._rate.merge(other._rate);
@@ -435,16 +434,13 @@ export class Histogram extends HistogramParams implements IApm<HistogramParams> 
   }
 
   merge(other: Partial<HistogramParams>) {
-    ["_defVal", "_min", "_max", "_count ", "_sum", "_varianceM", "_varianceS", "_ema"].forEach(key => {
-      if (typeof Object(other)[key] !== "undefined") Object(this)[key] = Object(other)[key];
-    });
+    copyIn<Histogram>(this, other, ["_sample"]);
 
     if (other._sample) {
       // we may get here after sample has been JSONified
       let newSample = other._sample;
       if (!(newSample instanceof Sample)) {
-        newSample = Object.assign({}, other._sample);
-        Object.setPrototypeOf(newSample, Sample.prototype);
+        newSample = merge1({}, other._sample);
       }
       newSample.toArray().forEach(sample => { this.add(sample); });
     }
