@@ -137,7 +137,7 @@ class SortedArray<T extends SortedElem> extends Array<T> implements IApm<SortedA
   }
 
   // interface functions needed bot not used
-  add = () => { throw new Error("unused"); };
+  add() { throw new Error("unused"); }
   get val() { return this.first().value; }
   get isUsed() { return this.length > 0; }
 
@@ -186,11 +186,9 @@ class SortedArray<T extends SortedElem> extends Array<T> implements IApm<SortedA
     }
   }
 
-  private readonly _parentIdx = (index: number) => Math.floor((index - 1) / 2);
-
-  private readonly _childIdx = (index: number) => [2 * index + 1, 2 * index + 2];
-
-  private readonly _score = (elem: SortedElem) => elem.value;
+  private _parentIdx(index: number) { return Math.floor((index - 1) / 2); }
+  private _childIdx(index: number) { return [2 * index + 1, 2 * index + 2]; }
+  private _score(elem: SortedElem) { return elem.value; }
 }
 
 
@@ -214,16 +212,7 @@ class Sample implements IApm<Sample> {
 
     // we may get here after sample has been JSONified
     assert(other._elems instanceof Array);
-    //if (other._elems instanceof Array) {
     other._elems.forEach(elem => { this.add(elem.value, elem.timestamp); });
-    // NO!! this._elems.merge(other._elems);
-    //} else {
-    //  Object.keys(other._elems).forEach(key => {
-    //    const value = Object(other._elems)[key].value;
-    //    const timestamp = Object(other._elems)[key].timestamp;
-    //    this.add(value, timestamp);
-    //  });
-    //}
     return this;
   }
 
@@ -258,9 +247,9 @@ class Sample implements IApm<Sample> {
     return this.isUsed ? this._elems.map(elem => elem.value) : [];
   }
 
-  private readonly _weight = (age: number) => Math.exp(this._alpha * (age / 1000));
+  private _weight(age: number) { return Math.exp(this._alpha * (age / 1000)); }
 
-  private readonly _priority = (age: number) => this._weight(age) / Math.random();
+  private _priority(age: number) { return this._weight(age) / Math.random(); }
 
   private _rescale(now: number = Date.now()) {
     const oldLandmark = this._landmark;
@@ -313,7 +302,7 @@ export class Counter extends CounterParams implements IApm<CounterParams> {
     return this._count;
   }
 
-  dec = (n = 1) => this.add(-n);
+  dec(n = 1) { return this.add(-n); }
 }
 
 
@@ -327,8 +316,6 @@ class MeterParams {
 
 export class Meter extends MeterParams implements IApm<MeterParams> {
 
-  private readonly _interval: NodeJS.Timeout;
-
   private constructor(public name: string, params: Partial<MeterParams>) {
 
     super();
@@ -341,7 +328,8 @@ export class Meter extends MeterParams implements IApm<MeterParams> {
       return;
     }
 
-    this._interval = setInterval((self: Meter) => {
+    //TODO: merge all meters' intervals into a single call
+    setInterval((self: Meter) => {
       self._rate.tick();
     }, this._tickInterval, this).unref();
   }
@@ -357,7 +345,7 @@ export class Meter extends MeterParams implements IApm<MeterParams> {
 
   merge(other: Partial<MeterParams>) {
 
-    copyIn<Meter>(this, other, ["_rate"]);
+    copyIn<Meter>(this, other, ["_rate", "_interval"]);
 
     if (other._rate) {
       this._rate.merge(other._rate);
@@ -441,6 +429,7 @@ export class Histogram extends HistogramParams implements IApm<HistogramParams> 
       let newSample = other._sample;
       if (!(newSample instanceof Sample)) {
         newSample = merge1({}, other._sample);
+        Object.setPrototypeOf(newSample, Sample.prototype);
       }
       newSample.toArray().forEach(sample => { this.add(sample); });
     }
@@ -553,11 +542,11 @@ export class Histogram extends HistogramParams implements IApm<HistogramParams> 
     this._ema = value * alpha + this._ema * (1 - alpha);
   }
 
-  private readonly _calculateMean = () => (!this._count) ? 0 : this._sum / this._count;
+  private _calculateMean() { return (!this._count) ? 0 : this._sum / this._count; }
 
-  private readonly _calculateVariance = () => (this._count <= 1) ? undefined : this._varianceS / (this._count - 1);
+  private _calculateVariance() { return (this._count <= 1) ? undefined : this._varianceS / (this._count - 1); }
 
-  private readonly _getPercentile = (p: number) => this.percentiles([p])[p];
+  private _getPercentile(p: number) { return this.percentiles([p])[p]; }
 }
 
 

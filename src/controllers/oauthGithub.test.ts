@@ -5,7 +5,7 @@ import { init } from "./oauthGithub";
 import { IDictionary } from "../utils";
 import axios from "axios";
 import { Options } from "sequelize";
-import { initDb, User } from "../models";
+import { initDb } from "../models";
 
 const href = "http://a.local/jest";
 
@@ -21,9 +21,6 @@ describe("oauthGithub tests", () => {
 
     const db = initDb(opts);
     await db.sync({ force: true });
-    await User.create({ username: "blocked", blocked: true });
-    await User.create({ username: "refresh", validTokens: [0] });
-    await User.create({ username: "revoke", validTokens: [1] });
 
     process.env.JWT_SECRET = "testSecret";
     process.env.PUBLIC_URL = "";
@@ -130,40 +127,6 @@ describe("oauthGithub tests", () => {
     mock2.mockClear();
   });
 
-  test("github negative: blocked user", async () => {
-
-    const state = await commonLogin1();
-    expect(state.length > 0).toBeTruthy();
-
-    // Oauth.authService
-    const mock1 = jest.spyOn(axios, "get").mockReturnValueOnce(Promise.resolve({
-      status: 200,
-      data: {
-        access_token: "aToken",     // eslint-disable-line
-      },
-    }));
-
-    // Oauth.graphqlService
-    const mock2 = jest.spyOn(axios, "post").mockReturnValueOnce(Promise.resolve({
-      status: 200,
-      data: {
-        data: {
-          viewer: {
-            login: "blocked",
-          },
-        },
-      },
-    }));
-
-    const token = await commonLogin2(state);
-    expect(!!token).toBeFalsy();
-
-    expect(mock1).toHaveBeenCalled();
-    mock1.mockClear();
-    expect(mock2).toHaveBeenCalled();
-    mock2.mockClear();
-  });
-
   test("github missing code from service", async () => {
     const state = await commonLogin1();
     expect(state.length > 0).toBeTruthy();
@@ -254,60 +217,4 @@ describe("oauthGithub tests", () => {
     mock2.mockClear();
   });
 
-  test("refresh positive", async () => {
-    const ctx: Partial<Koa.Context> = {
-      state: { user: "refresh", jwt: { iat: 0 } },
-      href,
-      redirect: jest.fn((str) => { expect(str).toBeTruthy(); }),
-      get: jest.fn((str) => { expect(str).toBeTruthy(); return undefined; }),
-      set: (jest.fn((str) => { expect(str).toBeTruthy(); })) as never,
-      assert: ((v: boolean, _status?: number, err?: string) => { if (!v) throw new Error(err); }) as never,
-      cookies: { set: jest.fn((name, val, _opts) => { expect(name && val).toBeTruthy(); return ctx; }) } as never,
-    };
-
-    await oauth.refresh(ctx as Koa.Context, async () => Promise.resolve());
-    expect(ctx.redirect).not.toHaveBeenCalled();
-    expect(typeof ctx.body.token).toEqual("string");
-    expect(ctx.status).toEqual(200);
-
-    const user = await User.findOne({ where: { username: "refresh" } });
-    expect(user.validTokens.includes(0)).toBeFalsy();
-    expect(user.validTokens.length).toEqual(1);
-  });
-
-  test("refresh on blocked user fails", async () => {
-    const ctx: Partial<Koa.Context> = {
-      state: { user: "blocked", jwt: { iat: 0 } },
-      href,
-      redirect: jest.fn((str) => { expect(str).toBeTruthy(); }),
-      get: jest.fn((str) => { expect(str).toBeTruthy(); return undefined; }),
-      set: (jest.fn((str) => { expect(str).toBeTruthy(); })) as never,
-      assert: ((v: boolean, _status?: number, err?: string) => { if (!v) throw new Error(err); }) as never,
-    };
-
-    await expect(
-      oauth.refresh(ctx as Koa.Context, async () => Promise.resolve()),
-    ).rejects.toThrow(/blocked/);
-  });
-
-  test("revoke positive", async () => {
-    const ctx: Partial<Koa.Context> = {
-      state: { user: "revoke", jwt: { iat: 1 } },
-      href,
-      redirect: jest.fn((str) => { expect(str).toBeTruthy(); }),
-      get: jest.fn((str) => { expect(str).toBeTruthy(); return undefined; }),
-      set: (jest.fn((str) => { expect(str).toBeTruthy(); })) as never,
-      assert: ((v: boolean, _status?: number, err?: string) => { if (!v) throw new Error(err); }) as never,
-      cookies: { set: jest.fn((name, val, _opts) => { expect(val).toBeFalsy(); return ctx; }) } as never,
-    };
-
-    await oauth.revoke(ctx as Koa.Context, async () => Promise.resolve());
-    expect(ctx.cookies.set).toHaveBeenCalled();   // eslint-disable-line
-
-    // revoked user cannot be refreshed
-    await expect(
-      oauth.refresh(ctx as Koa.Context, async () => Promise.resolve()),
-    ).rejects.toThrow(/revoked/);
-
-  });
 });

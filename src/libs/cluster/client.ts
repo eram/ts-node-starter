@@ -1,6 +1,6 @@
 import cluster from "cluster";
 import { initMaster } from "./master";
-import { apm, assert, getLogger, info } from "../../utils";
+import { apm, assert, error, getLogger, info, ROJO } from "../../utils";
 import { LocalMaster } from "./localMaster";
 import * as os from "os";
 import { Bridge, Packet, PktData } from "./bridge";
@@ -29,7 +29,7 @@ export function initClient(): Bridge {
 
     // initialize a client to cluster
     client = new Bridge({
-      clientId: cluster.worker.id,
+      id: cluster.worker.id,
       send: (packat: Packet) => process.send(packat),     // send to cluster
       onPkt: (cb: (packet: Packet) => void) => process.on("message", cb),
     }, getLogger());
@@ -65,18 +65,26 @@ export function initClient(): Bridge {
         break;
 
       case "signal":
-        const value = data.value ? String(data.value) : "SIGINFO";
-        data.value = undefined;
         try {
-          const code: unknown = data.code ? Number(data.code) : undefined;
-          process.emit(value as NodeJS.Signals, code as NodeJS.Signals);
+          const sig = String(data.value || "SIGINFO");
+          data.value = undefined;
+          if (sig === "SIGINT" || sig === "SIGTERM") {
+            setImmediate(() => process.exit(0));
+          } else {
+            process.emit(sig as NodeJS.Signals, sig as NodeJS.Signals);
+          }
         } catch (err) {
           data.error = err.message || err;
         }
         break;
 
       case "apm":
-        data.apm = { counters: apm.counters, meters: apm.meters, histograms: apm.histograms };
+        // we cannot send the real objects to the master, only POJOs
+        try {
+          data.apm = ROJO({ counters: apm.counters, meters: apm.meters, histograms: apm.histograms });
+        } catch (err) {
+          error("data.apm POJO error", err);
+        }
         break;
 
       default:

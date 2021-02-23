@@ -12,6 +12,8 @@ export class Claims implements IDictionary<boolean | number | string> {
 
 export function signToken(claims: Claims, expiresIn = "7d") {
   const pojo = POJO(claims);
+  delete pojo.exp;
+  delete pojo.iat;
   return sign(pojo, process.env.JWT_SECRET, { expiresIn });
 }
 

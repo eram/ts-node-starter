@@ -46,21 +46,21 @@ class LoadEnv {
     if (!level) for (level = 0; level < LogLevel.critical; level++) {
       if (LogLevel[level] === env.LOG_LEVEL) break;
     }
-    getLogger().setLevel(level);
+    getLogger().level = level;
   }
 
 
   print(logger = getLogger()) {
-    const { APP_NAME, HOSTNAME, NODE_ENV, LOG_LEVEL, POD_NAME, POD_NAMESPACE } = process.env;
+    const { APP_NAME, HOSTNAME, NODE_ENV, POD_NAME, POD_NAMESPACE } = process.env;
     logger.info(`
 -----------------
-App: ${APP_NAME}
-Version: ${this.version}, ReleaseId: ${this.releaseId}
-Namespace: ${POD_NAMESPACE}, Pod: ${POD_NAME}
-Host: ${HOSTNAME}, Node version: ${this.nodeVer}
-Process: ${process.pid}, workerId: ${this.workerId}
-NODE_ENV: ${NODE_ENV}, cwd: ${process.cwd()}
-logLevel: ${LogLevel[Number(LOG_LEVEL)]}, isDebugging: ${this.isDebugging}
+app: ${APP_NAME},
+version: ${this.version}, releaseId: ${this.releaseId},
+namespace: ${POD_NAMESPACE}, pod: ${POD_NAME},
+host: ${HOSTNAME}, node: ${this.nodeVer},
+pid: ${process.pid}, workerId: ${this.workerId},
+NODE_ENV: ${NODE_ENV}, cwd: ${process.cwd()},
+logLevel: ${LogLevel[logger.level]}, isDebugging: ${this.isDebugging},
 -----------------`);
   }
 

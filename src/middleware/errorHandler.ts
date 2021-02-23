@@ -1,7 +1,7 @@
 import Koa from "koa";
 import {
-  DatabaseError,
   ValidationError as SequelizeValidationError,
+  BaseError as SequelizeDatabaseError,
 } from "sequelize";
 import { env, POJO, warn } from "../utils";
 import { Counter, Histogram, Meter, meter } from "../utils/apm";
@@ -19,10 +19,59 @@ export function setWarnRespTime(time: number) {
   return rc;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function handleCatch(err: any, ctx: Koa.Context) {
+
+  // err is of type createError.HttpError if thrown in http context
+  ctx.status = (!!ctx.status && ctx.status !== 404) ? ctx.status : (err.statusCode || err.status || 500);
+  ctx.message = err.message || ctx.message || "Internal server error";
+  ctx.type = "json";
+  ctx.body = ctx.body || {};
+
+  if (err.isJoi) {
+    // Joi.ValidationError
+    err.details.forEach((item: { path: unknown[]; message: unknown }) => {
+      ctx.state.errors.push({ [String(item.path.join("."))]: item.message });
+    });
+
+  } else if (err instanceof SequelizeValidationError) {
+    err.errors.forEach(errorItem => {
+      const [, field] = errorItem.path.split(".");
+      const [, message] = errorItem.message.split(".");
+      ctx.state.errors.push({ [field]: message });
+    });
+
+  } else if (err instanceof SequelizeDatabaseError) {
+    if (Object(err).parent) { // this is a DatabaseError
+      const fieldNameMatch = /'(\w+)'/.exec(err.message);
+      const problemMatch = /(^\D+)\sfor/.exec(err.message);
+      if (fieldNameMatch && problemMatch) {
+        const [, fieldName] = fieldNameMatch;
+        const [, problem] = problemMatch;
+        ctx.state.errors.push({ [fieldName]: problem });
+      }
+    } else {
+      const msg = err.message || err;
+      ctx.state.errors.push({ [err.name || "message"]: msg });
+    }
+  } else {
+    // HttpError
+    // CustomError
+    // Error
+    const msg = err.originalError?.message || err.message || err;
+    ctx.state.errors.push({ [err.name || "message"]: msg });
+  }
+
+  // on dev send all errors and stack to the client
+  if (process.env.NODE_ENV !== "production") {
+    ctx.body.errors = ctx.state.errors;
+    ctx.body.stack = err.stack;
+  }
+}
+
 export async function errorHandler(ctx: Koa.Context, next: () => Promise<void>) {
 
   ctx.state.errors = new Array<Record<string, string>>();
-  let stack: POJO;
 
   const start = Date.now();
   httpInPorgress.add();
@@ -33,43 +82,7 @@ export async function errorHandler(ctx: Koa.Context, next: () => Promise<void>) 
 
   } catch (err) {
 
-    // err is of type HttpErrors if throw in http context
-    ctx.status = (!!ctx.status && ctx.status !== 404) ? ctx.status : (err.statusCode || err.status || 500);
-    ctx.message = ctx.message || err.message || "Internal server error";
-    ctx.type = "json";
-
-    if (err.isJoi) {
-      // Joi.ValidationError
-      err.details.forEach((item: { path: unknown[]; message: unknown }) => {
-        ctx.state.errors.push({ [String(item.path.join("."))]: item.message });
-      });
-
-    } else if (err instanceof DatabaseError) {
-      const fieldNameMatch = /'(\w+)'/.exec(err.message);
-      const problemMatch = /(^\D+)\sfor/.exec(err.message);
-      if (fieldNameMatch && problemMatch) {
-        const [, fieldName] = fieldNameMatch;
-        const [, problem] = problemMatch;
-        ctx.state.errors.push({ [fieldName]: problem });
-      }
-
-    } else if (err instanceof SequelizeValidationError) {
-      err.errors.forEach(errorItem => {
-        const [, field] = errorItem.path.split(".");
-        const [, message] = errorItem.message.split(".");
-        ctx.state.errors.push({ [field]: message });
-      });
-
-    } else {
-      // BaseError (SequelizeError)
-      // HttpError
-      // CustomError
-      // Error
-      const msg = err.originalError?.message || err.message || err;
-      ctx.state.errors.push({ [err.name || "message"]: msg });
-    }
-
-    stack = err.stack;
+    handleCatch(err, ctx);
   }
 
   ctx.status = ctx.status || 200;
@@ -81,14 +94,7 @@ export async function errorHandler(ctx: Koa.Context, next: () => Promise<void>) 
       warn("Koa error handler", POJO.stringify(ctx.state.errors));
     }
 
-    ctx.body = ctx.body || {};
     ctx.body.error = ctx.state.errors[0]?.message || ctx.message;
-
-    // on dev send all errors and stack to the client
-    if (process.env.NODE_ENV !== "production") {
-      ctx.body.errors = ctx.state.errors;
-      ctx.body.stack = stack;
-    }
   }
 
   const ms = Date.now() - start;

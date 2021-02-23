@@ -31,7 +31,7 @@ export class Packet<T extends PktData = PktData> {
 
 // transport mechanism for packets
 interface IPort {
-  readonly clientId: Dest;                // my worker.id, 'master'
+  readonly id: Dest;                // my worker.id, 'master'
   send: (packat: Packet) => void;
   onPkt: (cb: (packet: Packet) => void) => void;
 }
@@ -86,11 +86,14 @@ export class Bridge {
 
 
   public removeCallback(cb?: Callback) {
-    // if you have a callback remove it. no callback: remove all.
-    const idx = cb ? this._callbacks.indexOf(cb) : 0;
-    const length = cb ? (idx < 0 ? 0 : 1) : this._callbacks.length;
-    this._callbacks.splice(idx, length);
-    return idx >= 0;
+    // remove callback or remove all.
+    const cbs = [...this._callbacks];
+    const before = cbs.length;
+    this._callbacks.length = 0;
+    if (!!cb){
+      this._callbacks.concat(cbs.filter(me => me !== cb));
+    }
+    return (before !== this._callbacks.length);
   }
 
 
@@ -106,7 +109,7 @@ export class Bridge {
         return;
       }
 
-      const req = new Packet(this._port.clientId, to, data);
+      const req = new Packet(this._port.id, to, data);
       this._pendingReplies.set(req._pktId, { resolve, reject });
 
       if (timeout > 0) {
@@ -135,7 +138,7 @@ export class Bridge {
       return;
     }
 
-    const req = new Packet(this._port.clientId, to, data, false);
+    const req = new Packet(this._port.id, to, data, false);
 
     this._log.info(`post ${req._data.msg}`, req);
     this._port.send(req);
@@ -157,6 +160,7 @@ export class Bridge {
     }
   }
 
+  get id() { return this._port.id; }
 
   private _reply(packet: Packet) {
     return (data: PktData) => {

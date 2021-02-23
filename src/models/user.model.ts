@@ -1,9 +1,9 @@
 import { DataTypes, Model, Sequelize } from "sequelize";
-import { copyIn } from "../utils";
+import { assert, copyIn } from "../utils";
 
 export class User extends Model {
 
-  // fields with default values
+  // fields
   username: string;
   blocked = false;
   validTokens: number[] = [];   // list of token's claims.iat
@@ -17,6 +17,7 @@ export class User extends Model {
   constructor(user: Partial<User> = {}) {
     super();
     copyIn<User>(this, user);
+    assert(!!this.username);
   }
 }
 

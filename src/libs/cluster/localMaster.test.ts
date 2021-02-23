@@ -98,4 +98,22 @@ describe("master to client comms", () => {
     expect(cb).toHaveBeenCalledTimes(1);
   });
 
+  test("positive: master should answer apm request", async () => {
+
+    const client = initClient();
+    expect(client).toBeInstanceOf(Bridge);
+
+    let resp: PktData;
+    try {
+      resp = await client.send("apm");
+    } catch (err) {
+      console.error("client.send throws", err.stack || err);
+      throw err;
+    }
+    expect(typeof resp).toEqual("object");
+    expect(resp.error).toBeUndefined();
+    expect(resp.msg).toEqual("apm");
+    expect(typeof resp.apm).toEqual("object");
+  });
+
 });

@@ -18,7 +18,7 @@ export class LocalMaster {
     this.bus.on("error", logger.error.bind(logger));
 
     this.master = new Bridge({
-      clientId: "master",
+      id: "master",
       send: (packet: Packet) => {
         // source must be master
         if (packet._source !== "master") {
@@ -39,7 +39,7 @@ export class LocalMaster {
 
     // initialize a client on the same EventEmitter
     this.client = new Bridge({
-      clientId: 0,
+      id: 0,
       send: (packet: Packet) => {
         // source must be master
         if (packet._source !== 0) {

@@ -2,29 +2,32 @@ import * as Koa from "koa";
 import axios from "axios";
 import joiRouter from "koa-joi-router";
 import { URL } from "url";
-import { IDictionary, signToken, verifyToken } from "../utils";
-import { requireAuthorization } from "../middleware/authorization";
-import { User } from "../models";
-import * as Cookies from "cookies";
+import { copyIn } from "../utils";
+import { afterLogin, refresh, requireAuthorization, revoke } from "../middleware/authorization";
+import { KV } from "../models/kv.model";
 
-const inProgress: IDictionary = {};
+const keyfn = (n: string) => `github-${n}`;
 
-let authService: string;
-let graphqlService: string;
-let githubClientId: string;
-let githubSecret: string;
+const github = {
+  authService: "https://github.com/login/oauth",
+  graphqlService: "https://api.github.com/graphql",
+  clientId: String(process.env.OAUTH_GITHUB_CLIENT_ID),
+  secret: String(process.env.OAUTH_GITHUB_SECRET),
+};
 
-const MAX_USER_TOKENS = Number(process.env.MAX_USER_TOKENS) || 10;
 
-function authorize(ctx: Koa.Context) {
+async function authorize(ctx: Koa.Context) {
   // redirect to github oauth service
   // create a random token that is good for 10 mins
   const rand = (Math.round(Math.random() * 1000000)).toString();
-  inProgress[rand] = ctx.get("Referrer") || ctx.href;
-  setTimeout((n: string) => { delete inProgress[n]; }, (10 * 60 * 1000), rand).unref();
+  await KV.create({
+    key: keyfn(rand),
+    val:  ctx.get("Referrer") || ctx.href,
+    exp: new Date(Date.now() + (10 * 60 * 1000)),
+  });
 
-  const url = new URL(`${authService}/authorize`);
-  url.searchParams.set("client_id", `${githubClientId}`);
+  const url = new URL(`${github.authService}/authorize`);
+  url.searchParams.set("client_id", github.clientId);
   url.searchParams.set("scope", "user");
   url.searchParams.set("state", rand);
   url.searchParams.set("allow_signup", "false");
@@ -34,16 +37,15 @@ function authorize(ctx: Koa.Context) {
 
 async function getToken(code: string) {
 
-  const url = new URL(`${authService}/access_token`);
-  url.searchParams.set("client_id", `${githubClientId}`);
-  url.searchParams.set("client_secret", `${githubSecret}`);
-  url.searchParams.set("code", `${code}`);
+  const url = new URL(`${github.authService}/access_token`);
+  url.searchParams.set("client_id", github.clientId);
+  url.searchParams.set("client_secret", github.secret);
+  url.searchParams.set("code", code);
 
   let resp = await axios.get(url.href, {
     headers: { Accept: "application/json" },        // eslint-disable-line
   });
-  const data = resp?.data;
-  const accessToken = data.access_token;
+  const accessToken = resp.data?.access_token;
 
   if (resp.status !== 200 || !!resp.data?.errors || !accessToken) {
     const msg = resp.statusText || resp.data?.errors || `status: ${resp.status}`;
@@ -51,7 +53,7 @@ async function getToken(code: string) {
   }
 
   // get username
-  resp = await axios.post(graphqlService,
+  resp = await axios.post(github.graphqlService,
     JSON.stringify({ query: "{viewer{login}}" }),
     {
       headers: {
@@ -84,52 +86,36 @@ async function getToken(code: string) {
     throw new Error(`failed in fetching user: ${msg}`);
   }
 
-  // make sure this user is not blocked
-  const [user, created] = await User.findOrCreate({ where: { username } });
-  if (!created && user.blocked) {
-    throw new Error("user is blocked");
-  }
-
-  // add valid token
-  const token = signToken({ user: username });
-  const claims = verifyToken(token);
-  user.validTokens.unshift(claims.iat);
-  while (user.validTokens.length > MAX_USER_TOKENS) {
-    user.validTokens.pop();
-  }
-  user.isNewRecord = false;
-  await user.save();
-  return { token, claims };
+  return username;
 }
+
 
 async function login(ctx: Koa.Context, _next: Koa.Next): Promise<void> {
 
-  const state = String(ctx?.query?.state);
-  if (!state || !inProgress[state]) {
+  const state = String(ctx?.query?.state || "");
+  let referrer = "";
+
+  if (state) {
+    const kv = await KV.findOne({ where: { key: keyfn(state) } });
+    if (kv) {
+      referrer = kv.isValid ? kv.val : "";
+      void kv.destroy();
+    }
+  }
+
+  if (!referrer) {
     // start a new process
-    authorize(ctx);
-    return;
+    return authorize(ctx);
   }
 
   // we're back from authorize
-  const referrer = inProgress[state];
-  delete inProgress[state];
   const url = new URL(referrer);
-  const code = String(ctx.query.code);
+  const code = String(ctx.query.code || "");
   ctx.assert(!!code, 400, "missing code in request body");
 
   try {
-    const { token, claims } = await getToken(code);
-
-    // set cookie
-    const opts: Cookies.SetOption = {
-      expires: new Date(claims.exp * 1000),
-      secure: (process.env.NODE_ENV === "production"),
-      httpOnly: true,
-      sameSite: "strict",
-      overwrite: true,
-    };
-    ctx.cookies.set("token", token, opts);
+    const username = await getToken(code);
+    const claims = await afterLogin(ctx, username);
 
     // this will inform frontend that we're logged-in
     url.searchParams.set("user", claims.user);
@@ -144,73 +130,9 @@ async function login(ctx: Koa.Context, _next: Koa.Next): Promise<void> {
 }
 
 
-async function refresh(ctx: Koa.Context, _next: Koa.Next) {
+export function init(router: joiRouter.Router, opts: Partial<typeof github> = {}) {
 
-  const username = ctx.state.user;
-
-  // make sure this user is not blocked
-  const user = await User.findOne({ where: { username } });
-  ctx.assert(!!user && !user.blocked, 401, "user is blocked");
-  ctx.assert(!user.validTokens
-    || user.validTokens.includes(ctx.state.jwt?.iat), 401, "user token revoked");
-
-  const token = signToken({ user: username });
-  const claims = verifyToken(token);
-
-  // replace valid token in db and cleanup expired tokens
-  user.validTokens = user.validTokens.map(iat => (iat === ctx.state.jwt?.iat) ? claims.iat : iat);
-  user.isNewRecord = false;
-  await user.save();
-
-  // replace cookie
-  const opts: Cookies.SetOption = {
-    expires: new Date(claims.exp * 1000),
-    secure: (process.env.NODE_ENV === "production"),
-    httpOnly: true,
-    sameSite: "strict",
-    overwrite: true,
-  };
-  ctx.cookies.set("token", token, opts);
-
-  // respond with the new token so it can be used to access other servers on the same cluster
-  ctx.body = { token, user: username, expires: claims.exp * 1000 };
-  ctx.status = 200;
-  ctx.type = "json";
-}
-
-async function revoke(ctx: Koa.Context, _next: Koa.Next) {
-
-  // remove valid token in db
-  const username = ctx.state.user;
-  const user = await User.findOne({ where: { username } });
-  ctx.assert(!!user, 401, "invalid user");
-
-  user.isNewRecord = false;
-  user.validTokens = user.validTokens.filter(iat => (iat !== ctx.state.jwt?.iat));
-  await user.save();
-
-  ctx.cookies.set("token"); // expire this cookie now
-
-  ctx.status = 200;
-  ctx.set("Cache-Control", "no-cache");
-  ctx.type = "json";
-  ctx.body = {
-    ok: true,
-  };
-}
-
-
-export function init(router: joiRouter.Router, opts: {
-  authService?: string;
-  graphqlService?: string;
-  githubClientId?: string;
-  githubSecret?: string;
-} = {}) {
-
-  authService = opts.authService || "https://github.com/login/oauth";
-  graphqlService = opts.graphqlService || "https://api.github.com/graphql";
-  githubClientId = opts.githubClientId || process.env.OAUTH_GITHUB_CLIENT_ID;
-  githubSecret = opts.githubSecret || process.env.OAUTH_GITHUB_SECRET;
+  copyIn(github, opts);
 
   router.get("/sso/github/authorize",
     {

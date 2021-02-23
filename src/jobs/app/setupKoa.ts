@@ -27,10 +27,10 @@ function corsOptions(whitelist: string[]) {
   };
 }
 
-const { ROUTER_BASE_PATH, CORS_WHITELIST, NODE_ENV } = process.env;
 
 export function setupKoa(koa: Koa, client: Bridge, db: Sequelize) {
 
+  const { ROUTER_BASE_PATH, CORS_WHITELIST, NODE_ENV } = process.env;
   const httpLogger = getLogger("http", LogLevel.info);
   const whitelist: [] = !!CORS_WHITELIST ? JSON.parse(CORS_WHITELIST) : [];
 

@@ -4,7 +4,7 @@
 import cluster from "cluster";
 import * as fs from "fs";
 import path from "path";
-import { apm, count, Counter, env, errno, error, getLogger, Histogram, LogLevel, Meter, POJO } from "../../utils";
+import { apm, assert, count, Counter, env, errno, error, getLogger, Histogram, LogLevel, Meter, POJO } from "../../utils";
 import { Bridge, BridgeError, Packet, PktData, PKT_TOPIC } from "./bridge";
 import { initMaster } from "./master";
 import { WorkerConf, WorkerInfo, WorkerState } from "./workerConf";
@@ -76,7 +76,7 @@ function clusterDispatch(pkt: Readonly<Packet>) {
 }
 
 
-function getInfo(worker: cluster.Worker){
+function getInfo(worker: cluster.Worker) {
   return Object(worker).__info__ as WorkerInfo;
 }
 
@@ -148,22 +148,33 @@ function clusterApmHandler(data: PktData, reply: (data: PktData) => void) {
 
 
 function clusterDestroy(signal: NodeJS.Signals) {
-  info(`cluster stopping on ${signal}...`);
+  info("cluster stopping on", signal);
 
   if (interval) clearInterval(interval);
   interval = undefined;
+
+  // prevent EPIPE errors when process goes down
+  process.stdout.on("error", function (err) {
+    if (err.code == "EPIPE") {
+      process.exit(0);
+    }
+  });
 
   for (const i in cluster.workers) {
     const worker = cluster.workers[i];
     const inf = getInfo(worker);
     const app = apps[inf.idx];
 
-    if (app.shutdown_with_message) {
+    if (app.shutdown_with_message && info.state == WorkerState.pinging) {
       info(`wroker ${worker.id}: ${signal}`);
-      worker.send(signal);
+      //worker.emit(signal);
+      const msg: PktData = { msg: "signal", value: signal };
+      bridge.post(msg, worker.id);
     } else {
       info(`wroker ${worker.id}: destroy`);
       worker.destroy(signal);
+      // we want to see the cluster on "exit" so we can cleanup the cluster
+      cluster.emit("exit", worker, 0, signal);
     }
   }
 
@@ -173,11 +184,14 @@ function clusterDestroy(signal: NodeJS.Signals) {
     if (!live) {
       process.exit(0);
     }
-  });
+  }).unref();
 
   // failsafe timeout
   setTimeout(() => {
     info("clusterDestory timeout");
+    for (const i in cluster.workers) {
+      cluster.workers[i].process.kill();
+    }
     process.exit(0);
   }, WorkerConf.KILL_TIMEOUT / 2).unref();
 }
@@ -271,7 +285,7 @@ async function clusterMaint() {
   if (!env.isDebugging) {
     toKill.forEach(worker => {
       info(`terminating worker ${worker.id}`);
-      worker.destroy("SIGKILL");
+      worker.process.kill();
     });
   }
 }
@@ -336,108 +350,115 @@ function clusterFork(app: WorkerConf, idx: number, restarts = 0) {
  * arr: array or Partial<WorkerApp>
  */
 export async function clusterStart(arr: POJO[]) {
-  if (cluster.isMaster) {
-    info(`cluster starting on pid ${process.pid}...`);
 
-    // restart previous cluster
-    if (apps.length) {
-      info("cluster restarting");
-      clusterDestroy("SIGTERM");
-      apps.length = 0;
+  assert(cluster.isMaster, "cluster start cannot be run from a worker node");
+  info(`cluster starting on pid ${process.pid}...`);
+
+  // restart previous cluster
+  if (apps.length) {
+    info("cluster restarting");
+    clusterDestroy("SIGTERM");
+    apps.length = 0;
+  }
+
+  cluster.on("online", (worker) => {
+    info(`worker ${worker.id} is online`);
+
+    const inf = getInfo(worker);
+    inf.state = WorkerState.online;
+  });
+
+  cluster.on("disconnect", (worker) => {
+    info(`worker ${worker.id} disconnected`);
+
+    const inf = getInfo(worker);
+    inf.state = WorkerState.disconnected;
+  });
+
+  cluster.on("listening", (worker) => {
+    info(`worker ${worker.id} listening`);
+    const inf = getInfo(worker);
+    inf.state = WorkerState.listening;
+  });
+
+  cluster.on("message", (worker, msg: Packet) => {
+    info(`worker ${worker.id} ${msg._data?.msg}:`, msg);
+
+    const inf = getInfo(worker);
+    inf.lastUpdate = Date.now();
+
+    clusterDispatch(msg);
+  });
+
+  cluster.on("exit", (worker, code, signal) => {
+
+    let restarting = false;
+    const inf = getInfo(worker);
+    const app = apps[inf.idx];
+    delete Object(worker).__info__;
+
+    // 3221225786 >> STATUS_CONTROL_C_EXIT on Windows
+    if (code === 3221225786) {
+      code = 0;
+      signal = "SIGINT";
     }
 
-    // Master can be terminated by either SIGTERM
-    // or SIGINT. The later is used by CTRL+C on console.
-    cluster.on("online", (worker) => {
-      info(`worker ${worker.id} is online`);
+    info(`worker ${worker.id} died. exit code: ${code}, signal: ${signal}`);
 
-      const inf = getInfo(worker);
-      inf.state = WorkerState.online;
-    });
-
-    cluster.on("disconnect", (worker) => {
-      info(`worker ${worker.id} disconnected`);
-
-      const inf = getInfo(worker);
-      inf.state = WorkerState.disconnected;
-    });
-
-    cluster.on("listening", (worker) => {
-      info(`worker ${worker.id} listening`);
-      const inf = getInfo(worker);
-      inf.state = WorkerState.listening;
-    });
-
-    cluster.on("message", (worker, msg: Packet) => {
-      info(`worker ${worker.id} ${msg._data?.msg}:`, msg);
-
-      const inf = getInfo(worker);
-      inf.lastUpdate = Date.now();
-
-      clusterDispatch(msg);
-    });
-
-    cluster.on("exit", (worker, code, signal) => {
-      info(`worker ${worker.id} died. exit code: ${code} signal: ${signal}`);
-
-      let restarting = false;
-      const inf = getInfo(worker);
-      const app = apps[inf.idx];
-      delete Object(worker).__info__;
-
-      if (!!code && app.autorestart) {
-        if (inf.restarts < app.max_restarts) {
-          restarting = true;
-          const timeout = app.restart_delay + app.exp_backoff_restart_delay * inf.restarts;
-          info(`reastrting ${worker.id} in ${timeout} ms`);
-          setTimeout(() => { clusterFork(apps[inf.idx], inf.idx, inf.restarts + 1); }, timeout);
-        } else {
-          info(`wroker ${worker.id} too many restarts`);
-        }
+    if (!!code && app.autorestart) {
+      if (inf.restarts < app.max_restarts) {
+        restarting = true;
+        const timeout = app.restart_delay + app.exp_backoff_restart_delay * Math.pow(inf.restarts, 2);
+        info(`reastrting ${worker.id} in ${timeout} ms`);
+        setTimeout(() => { clusterFork(apps[inf.idx], inf.idx, inf.restarts + 1); }, timeout);
+      } else {
+        info(`wroker ${worker.id} too many restarts`);
       }
+    }
 
-      const live = Object.keys(cluster.workers).length;
-      if (!restarting && live <= 1) {
+    const live = Object.keys(cluster.workers).length;
+    if (!restarting && live <= 1) {
+      // give it a bit of time to let the buffers flush
+      setTimeout(() => {
         info("no more live workers. exiting...");
         process.exit(0);
-      }
-    });
-
-    // Note for nodemon: Use nodemon --signal SIGTERM
-    process.on("SIGTERM", clusterDestroy);
-    process.on("SIGINT", clusterDestroy);
-
-    // initialize bridge master
-    bridge = initMaster(new Bridge({
-      clientId: "master",
-      send: clusterDispatch,
-      onPkt: (cb: (packet: Packet) => void) => process.on("message", cb),
-    }, logger));
-    bridge.addCallback(clusterApmHandler.bind(bridge));
-
-    // ping-pong myself - - just to make sure we're on
-    const resp = await bridge.send("ping", "master");
-    logger.assert(!resp.error && resp.msg === "pong");
-
-
-    // load apps
-    if (!Array.isArray(arr) || !arr.length) {
-      logger.error("Config invalid");
-      return errno.EBADMSG;
+      }, 500).unref();
     }
+  }); // exit
 
-    arr.forEach((conf: WorkerConf) => apps.push(new WorkerConf(conf)));
+  // Master can be terminated by either SIGTERM or SIGINT.
+  process.on("SIGTERM", clusterDestroy);
+  process.on("SIGINT", clusterDestroy);
 
-    // Fork workers
-    apps.forEach((app, idx) => {
-      for (let i = 0; i < app.instances; i++) {
-        clusterFork(app, idx);
-      }
-    });
+  // initialize bridge master
+  bridge = initMaster(new Bridge({
+    id: "master",
+    send: clusterDispatch,
+    onPkt: (cb: (packet: Packet) => void) => process.on("message", cb),
+  }, logger));
+  bridge.addCallback(clusterApmHandler.bind(bridge));
 
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    interval = setInterval(clusterMaint, WorkerConf.KILL_TIMEOUT / 2).unref();
-    return 0;
+  // ping-pong myself - - just to make sure we're on :-)
+  const resp = await bridge.send("ping", "master");
+  logger.assert(!resp.error && resp.msg === "pong");
+
+  // load apps
+  if (!Array.isArray(arr) || !arr.length) {
+    logger.error("Invalid config");
+    return errno.EBADMSG;
   }
+
+  arr.forEach((conf: WorkerConf) => apps.push(new WorkerConf(conf)));
+
+  // Fork workers
+  apps.forEach((app, idx) => {
+    for (let i = 0; i < app.instances; i++) {
+      clusterFork(app, idx);
+    }
+  });
+
+  interval = setInterval(() => { void clusterMaint(); }, WorkerConf.KILL_TIMEOUT / 2).unref();
+  return 0;
 }
+
 

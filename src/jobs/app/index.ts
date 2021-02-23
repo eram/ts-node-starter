@@ -31,3 +31,13 @@ main().then((rc: number) => {
 }).catch(err => {
   throw new Error(err);
 });
+
+
+process.on("SIGINT", function () {
+  console.log("SIGINT ...");
+  setTimeout(function () { console.log("quitting"); process.exit(0); }, 100);
+});
+process.on("exit", function () {
+  console.log("shutting down ...");
+  setTimeout(function () { console.log("quitting"); process.exit(0); }, 100);
+});

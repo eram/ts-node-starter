@@ -16,23 +16,26 @@ describe("bridge client tests", () => {
       console.error("client.send throws", err.stack || err);
       throw err;
     }
+
     expect(typeof resp).toEqual("object");
     expect(resp.error).toBeUndefined();
     expect(resp.msg).toEqual("pong");
   });
 
-  test("positive: master should answer apm request", async () => {
+  test("client should answer apm request", async () => {
 
     const client = initClient();
     expect(client).toBeInstanceOf(Bridge);
+    const master = Object(client).master as Bridge;
 
     let resp: PktData;
     try {
-      resp = await client.send("apm");
+      resp = await master.send("apm", client.id);
     } catch (err) {
-      console.error("client.send throws", err.stack || err);
+      console.error("master.send throws", err.stack || err);
       throw err;
     }
+
     expect(typeof resp).toEqual("object");
     expect(resp.error).toBeUndefined();
     expect(resp.msg).toEqual("apm");
@@ -71,13 +74,14 @@ describe("bridge client tests", () => {
     const fnDevNull = jest.fn((_pkt: unknown) => { return; });
     port.send = fnDevNull;
 
-    await expect(
-      client.send("should timeout 1" as never, "master", 1),
-    ).rejects.toThrow(/timeout/);
-
-    await expect(
-      client.send("should timeout 2" as never, "master", 1),
-    ).rejects.toThrow(/timeout/);
+    await Promise.all([
+      expect(
+        client.send("should timeout 1" as never, "master", 1),
+      ).rejects.toThrow(/timeout/),
+      expect(
+        client.send("should timeout 2" as never, "master", 1),
+      ).rejects.toThrow(/timeout/),
+    ]);
 
     expect(fnDevNull).toHaveBeenCalledTimes(2);
   });
@@ -121,6 +125,8 @@ describe("bridge client tests", () => {
   test("client post", () => {
     const client = initClient();
     client.post("ping", "master");
+
+    client.post({} as PktData, "master"); // coverage!
   });
 
   test("client remove callback", () => {
@@ -130,7 +136,7 @@ describe("bridge client tests", () => {
 
     expect(client.removeCallback(cb)).toBeTruthy();
     expect(client.removeCallback(cb)).toBeFalsy();
-    expect(client.removeCallback()).toBeTruthy();
+    expect(client.removeCallback()).toBeFalsy();
   });
 });
 

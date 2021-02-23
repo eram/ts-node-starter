@@ -3,7 +3,9 @@ import { format } from "util";
 import * as cluster from "cluster";
 import process from "process";
 import { IDictionary, POJO } from ".";
-import { gray, blueBright, red } from "chalk";
+import { grey, blueBright, red } from "chalk";
+
+// TODO: consider using npm log-buffer to improve logger performance
 
 // this enum must match with CoralogixLogger.Severity
 export enum LogLevel { debug = 1, trace = 2, info = 3, warn = 4, error = 5, critical = 6 }
@@ -18,7 +20,7 @@ function rawLogger(_ctx: string) {
   const ctx = (_ctx && _ctx.length) ? `[${_ctx}] ` : "";
   const { assert, debug, trace, info, warn, error } = (!!hooked) ? hooked : console;    // eslint-disable-line
   const logFns = [assert, debug, trace, info, warn, error, error];
-  const chalks = [red, gray, gray, blueBright, blueBright, red, red];
+  const chalks = [red, grey, grey, blueBright, blueBright, red, red];
 
   return (level: LogLevel, ...params: unknown[]) => {
     const prefix = chalks[level](`${(addTime ? (new Date()).toISOString() + " " : "")}${ctx}${params[0]}`);
@@ -73,11 +75,11 @@ export class Logger {
     return log;
   }
 
-  setLevel(level: LogLevel): LogLevel {
-    const lvl = this._level;
+  set level(level: LogLevel) {
     this._level = level;
-    return lvl;
   }
+
+  get level() { return this._level; }
 
   debug(...params: unknown[]) {
     if (this._level <= LogLevel.debug) {
@@ -122,17 +124,18 @@ export class Logger {
   }
 }
 
+
 // shorthands to global logger
 export const getLogger = Logger.getLogger;
 const gLogger = getLogger();
-export const trace = (...params: unknown[]) => { gLogger.trace(...params); };
-export const debug = (...params: unknown[]) => { gLogger.debug(...params); };
-export const info = (...params: unknown[]) => { gLogger.info(...params); };
-export const log = (...params: unknown[]) => { gLogger.info(...params); };
-export const warn = (...params: unknown[]) => { gLogger.warn(...params); };
-export const error = (...params: unknown[]) => { gLogger.error(...params); };
-export const critical = (...params: unknown[]) => { gLogger.critical(...params); };
-export const assert = (cond: boolean, ...params: unknown[]) => { gLogger.assert(cond, ...params); };
+export const trace = gLogger.trace.bind(gLogger);
+export const debug = gLogger.debug.bind(gLogger);
+export const info = gLogger.info.bind(gLogger);
+export const log = gLogger.info.bind(gLogger);
+export const warn = gLogger.warn.bind(gLogger);
+export const error = gLogger.error.bind(gLogger);
+export const critical = gLogger.critical.bind(gLogger);
+export const assert = gLogger.assert.bind(gLogger);
 
 
 export function hookConsole() {

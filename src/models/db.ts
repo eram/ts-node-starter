@@ -1,6 +1,7 @@
 import { Dialect, Sequelize, Options } from "sequelize";
 import { assert, copyIn, error } from "../utils";
 import * as User from "./user.model";
+import * as KV from "./kv.model";
 export { Sequelize, Options } from "sequelize";
 
 let sequelize: Sequelize;
@@ -11,7 +12,7 @@ export function initDb(opts: Options = {}) {
 
     const { DB_NAME, DB_USER, DB_PWD, DB_DIALECT, DB_HOST, DB_PORT, DB_STORAGE = "", DB_VERBOSE = "false" } = process.env;
 
-    const o = copyIn({
+    const o = copyIn<Options>({
       database: DB_NAME,
       username: DB_USER,
       password: DB_PWD,
@@ -26,7 +27,7 @@ export function initDb(opts: Options = {}) {
       pool: {
         min: 2,
       },
-    } as Options, opts);
+    }, opts);
 
     assert(!!o.dialect, "Missing Sequelize config");
 
@@ -34,6 +35,7 @@ export function initDb(opts: Options = {}) {
 
     // intiinalize all models
     User.init(sequelize);
+    KV.init(sequelize);
     // ...
 
     // associate models async
