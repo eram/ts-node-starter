@@ -68,8 +68,8 @@ export function initClient(): Bridge {
         try {
           const sig = String(data.value || "SIGINFO");
           data.value = undefined;
-          if (sig === "SIGINT" || sig === "SIGTERM") {
-            setImmediate(() => process.exit(0));
+          if (sig === "SIGTERM") {
+            process.exit(0);
           } else {
             process.emit(sig as NodeJS.Signals, sig as NodeJS.Signals);
           }

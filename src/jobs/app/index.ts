@@ -4,6 +4,7 @@ import { initDb, checkDbAlive } from "../../models";
 import { setupKoa } from "./setupKoa";
 import { env, errno, info } from "../../utils";
 import { apm } from "../../utils/apm";
+import { worker } from "cluster";
 
 
 export async function main() {
@@ -19,6 +20,14 @@ export async function main() {
   const srv = setupKoa(new Koa(), client, db);
   srv.listen(port);
 
+  process.on("SIGINT", function () {
+    console.log("SIGINT ...");
+    client.removeCallback();
+    worker.disconnect();
+    srv.removeAllListeners();
+    setTimeout(function () { process.exit(0); }, 100);
+  });
+
   info("server listerning on", process.env.PUBLIC_URL || `http://localhost:${port}`);
   return 0;
 }
@@ -32,12 +41,9 @@ main().then((rc: number) => {
   throw new Error(err);
 });
 
-
-process.on("SIGINT", function () {
-  console.log("SIGINT ...");
-  setTimeout(function () { console.log("quitting"); process.exit(0); }, 100);
-});
+/*
 process.on("exit", function () {
   console.log("shutting down ...");
   setTimeout(function () { console.log("quitting"); process.exit(0); }, 100);
 });
+*/

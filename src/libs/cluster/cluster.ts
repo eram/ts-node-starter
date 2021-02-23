@@ -169,13 +169,12 @@ function clusterStop(signal: NodeJS.Signals) {
 
     if (app.shutdown_with_message && info.state == WorkerState.pinging) {
       info(`wroker ${worker.id}: ${signal}`);
-      //worker.emit(signal);
       const msg: PktData = { msg: "signal", value: signal };
       bridge.post(msg, worker.id);
     } else {
       info(`wroker ${worker.id}: destroy`);
       worker.destroy(signal);
-      // we want to see the cluster on "exit" so we can cleanup the cluster
+      // we want to see the cluster on "exit" so we can cleanup
       cluster.emit("exit", worker, 0, signal);
     }
   }
@@ -186,7 +185,7 @@ function clusterStop(signal: NodeJS.Signals) {
     if (!live) {
       process.exit(0);
     }
-  }).unref();
+  });
 
   // failsafe timeout
   setTimeout(() => {
@@ -413,16 +412,17 @@ export async function clusterStart(arr: POJO[]) {
         restarting = true;
         const timeout = app.restart_delay + app.exp_backoff_restart_delay * Math.pow(inf.restarts, 2);
         info(`reastrting ${worker.id} in ${timeout} ms`);
-        setTimeout(() => { clusterFork(apps[inf.idx], inf.idx, inf.restarts + 1); }, timeout).unref();
+        setTimeout(() => { clusterFork(apps[inf.idx], inf.idx, inf.restarts + 1); }, timeout);
       } else {
         info(`wroker ${worker.id} too many restarts`);
       }
     }
 
-    const live = Object.keys(cluster.workers).length;
-    if (!restarting && live <= 1) {
+    if (!restarting) {
       // give it a bit of time to let the buffers flush
       setTimeout(() => {
+        const live = Object.keys(cluster.workers).length;
+        if (live > 0) return;
         info("no more live workers. exiting...");
         process.exit(0);
       }, 500).unref();
