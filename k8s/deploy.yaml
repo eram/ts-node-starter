@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ts-node-starter
+  namespace: {{namespace}}
+  annotations:
+    buildRequestedBy: "{{requestedby}}"
+    buildReason: "{{buildreason}}"
+    branch: "{{branch}}"
+    lastCommit: "{{lastCommit}}"
+    authorCommit: "{{authorCommit}}"
+    deployedVersion: "{{version}}"
+    deployedBy: "{{RELEASE_DEPLOYMENT_REQUESTEDFOR}}"
+    deployedDate: "{{RELEASE_DEPLOYMENT_STARTTIME}}"
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: ts-node-starter
+  template:
+    metadata:
+      labels:
+        app: ts-node-starter
+    spec:
+      containers:
+        - name: ts-node-starter
+          image: "{{image}}:{{version}}"
+          ports:
+            - containerPort: 8104
+          resources:
+            limits:
+              memory: "2048Mi"
+              cpu: "250m"
+            requests:
+              memory: "512Mi"
+              cpu: "50m"
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          envFrom:
+            - secretRef:
+                    name: ts-node-starter-secret
+            - configMapRef:
+                    name: ts-node-starter-config
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8104
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 2

@@ -1,44 +1,75 @@
-import * as logger from './logger';
+import * as logger from "./logger";
 
 beforeAll(() => {
-  process.env.LOG_ADD_TIME = 'true';
+  process.env.LOG_ADD_TIME = "true";
+  logger.hookConsole();
 });
 
-describe('logger tests', () => {
+afterAll(() => {
+  logger.unhookConsole();
+});
 
-  it('created', () => {
-    const log = logger.getLogger('test', logger.LogLevel.trace);
+describe("logger tests", () => {
+
+  it("created", () => {
+    const nullFn = (_level: logger.LogLevel, _txt: string) => { return; };
+    const log = logger.getLogger("test1", logger.LogLevel.trace, nullFn);
     expect(log).not.toBeUndefined();
   });
 
-  it('check all types of log levels', () => {
-    logger.getLogger().setLevel(logger.LogLevel.debug);
-    [logger.trace, logger.debug, logger.info, logger.warn, logger.error, logger.critical, logger.assert].forEach(fn => {
-      expect(typeof fn).toBe('function');
-      fn('check');
-    });
+  it("logs thru logger function", () => {
+    const nullFn = jest.fn((_level: logger.LogLevel, _txt: string) => { return; });
+    const log = logger.getLogger("test2", logger.LogLevel.critical, nullFn);
+    log.critical("test");
+    expect(nullFn).toHaveBeenCalledTimes(1);
   });
 
-  it('check assertion throws in debug', () => {
-    const save = process.env.DEBUG;
-    process.env.DEBUG = 'true';
+  it("logs thru global logger", () => {
+    logger.warn("logs thru global logger");
+  });
+
+  it("check all types of log levels", () => {
+    const nullFn = jest.fn((_level: logger.LogLevel, _txt: string) => { return; });
+    const log = logger.getLogger("test3", logger.LogLevel.debug, nullFn);
+    log.debug(1);
+    log.trace(2);
+    log.info(3);
+    log.warn(4);
+    log.error(5);
+    log.critical(6);
+    expect(nullFn).toHaveBeenCalledTimes(6);
+  });
+
+  it("check level works", () => {
+    const nullFn = jest.fn((_level: logger.LogLevel, _txt: string) => { return; });
+    const log = logger.getLogger("test4", logger.LogLevel.warn, nullFn);
+    log.debug(0);
+    log.trace(0);
+    log.info(0);
+    log.warn(1);
+    log.error(2);
+    log.critical(3);
+    expect(nullFn).toHaveBeenCalledTimes(3);
+  });
+
+  it("check assertion throws in debug", () => {
+    const nullFn = (_level: logger.LogLevel, _txt: string) => { return; };
+    const save = process.env.JEST_WORKER_ID;
+    delete process.env.LOG_ADD_TIME;
+    logger.assert(!!save);
+
+    const log = logger.getLogger("test5", logger.LogLevel.warn, nullFn);
     expect(() => {
-      logger.getLogger().assert(false);
+      log.assert(false);
     }).toThrow();
-    delete process.env.DEBUG;
+
+    delete process.env.JEST_WORKER_ID;
+    const log2 = logger.getLogger("test6", logger.LogLevel.warn, nullFn);
     expect(() => {
-      logger.getLogger().assert(false);
-    }).not.toThrow();
-    process.env.DEBUG = save;
-  });
+      log2.assert(false, "should throw");
+    }).toThrow();
 
-  it('logs thru logger interface', () => {
-
-    //let called = 0;
-    const logFn = jasmine.createSpy('logFn', () => { /* */ });
-    const log = logger.getLogger('logFn', logger.LogLevel.critical, logFn);
-    log.critical('test');
-    expect(logFn).toHaveBeenCalledTimes(1);
+    process.env.JEST_WORKER_ID = save;
   });
 
 });

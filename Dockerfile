@@ -1,15 +1,25 @@
-FROM keymetrics/pm2:latest-alpine
+FROM keymetrics/pm2:14-alpine
 
-# Bundle APP files
-COPY src src/
-COPY package.json .
-COPY pm2.json .
+## install  curl + bash
+RUN apk update && apk add --no-cache curl bash;
 
-# Install app dependencies
-ENV NPM_CONFIG_LOGLEVEL warn
+# create app directory
+ENV WORK_DIR_PATH /usr/src/app
+RUN mkdir -p $WORK_DIR_PATH
+RUN chown -R root:$USER $WORK_DIR_PATH
+WORKDIR $WORK_DIR_PATH
+
+# copy in
+ADD package*.json ./
+ADD tsconfig.json ./
+COPY ./.env ./
+COPY ./src ./src
+COPY ./public ./public
+COPY ./cluster.config.js ./
+
+# install dependencies and print resulting docker structure
 RUN npm install --production
-
-# Show current folder structure in logs
 RUN ls -al -R
 
-CMD ["pm2-runtime", "start", "pm2.json", "--env", "production"]
+# default docker entry point
+ENTRYPOINT ["npm", "start", "cluster" "cluster.config.js", "--env", "production"]

@@ -1,0 +1,31 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: ts-node-starter-example-job
+  namespace: {{namespace}}
+spec:
+  ## run every 5 min (once at 23:55 -> "55 23 * * *")
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          activeDeadlineSeconds: 1200
+          restartPolicy: Never
+          containers:
+            - name: ts-node-starter-example-job
+              image: "{{image}}:{{version}}"
+              command: ["/bin/bash", "-c", "node src job src/jobs/exampleJob"]
+              envFrom:
+                - secretRef:
+                    name: ts-node-starter-secret
+                - configMapRef:
+                    name: ts-node-starter-config
+              env:
+                - name: optional_var_name
+                  value: some value
+      backoffLimit: 0
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+
