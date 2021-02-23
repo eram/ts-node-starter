@@ -12,7 +12,7 @@ module.exports = {
       args: "",
       instances: 2, // "max" for best performance of most apps
       autorestart: true,
-      listen_timeout: 8000,
+      listen_timeout: 10000,
       max_memory_restart: "1G",
       restart_delay: 1000,
       max_restarts: 100,

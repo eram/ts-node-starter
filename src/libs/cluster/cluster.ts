@@ -16,6 +16,7 @@ const warn = logger.warn.bind(logger);
 const apps = new Array<WorkerConf>();
 let interval: NodeJS.Timeout;
 let bridge: Bridge;
+let clusterStopping = false;
 
 
 // bridge master dispatcher
@@ -147,9 +148,10 @@ function clusterApmHandler(data: PktData, reply: (data: PktData) => void) {
 }
 
 
-function clusterDestroy(signal: NodeJS.Signals) {
+function clusterStop(signal: NodeJS.Signals) {
   info("cluster stopping on", signal);
 
+  clusterStopping = true;
   if (interval) clearInterval(interval);
   interval = undefined;
 
@@ -293,6 +295,7 @@ async function clusterMaint() {
 
 function clusterFork(app: WorkerConf, idx: number, restarts = 0) {
 
+  if (clusterStopping) return;
   if (!fs.existsSync(app.script)) {
     error("'script' must be a js/ts file'");
     return;
@@ -357,7 +360,7 @@ export async function clusterStart(arr: POJO[]) {
   // restart previous cluster
   if (apps.length) {
     info("cluster restarting");
-    clusterDestroy("SIGTERM");
+    clusterStop("SIGTERM");
     apps.length = 0;
   }
 
@@ -399,18 +402,18 @@ export async function clusterStart(arr: POJO[]) {
 
     // 3221225786 >> STATUS_CONTROL_C_EXIT on Windows
     if (code === 3221225786) {
-      code = 0;
+      code = 1;
       signal = "SIGINT";
     }
 
     info(`worker ${worker.id} died. exit code: ${code}, signal: ${signal}`);
 
-    if (!!code && app.autorestart) {
+    if ((!!code || !!signal) && app.autorestart && !clusterStopping) {
       if (inf.restarts < app.max_restarts) {
         restarting = true;
         const timeout = app.restart_delay + app.exp_backoff_restart_delay * Math.pow(inf.restarts, 2);
         info(`reastrting ${worker.id} in ${timeout} ms`);
-        setTimeout(() => { clusterFork(apps[inf.idx], inf.idx, inf.restarts + 1); }, timeout);
+        setTimeout(() => { clusterFork(apps[inf.idx], inf.idx, inf.restarts + 1); }, timeout).unref();
       } else {
         info(`wroker ${worker.id} too many restarts`);
       }
@@ -426,9 +429,9 @@ export async function clusterStart(arr: POJO[]) {
     }
   }); // exit
 
-  // Master can be terminated by either SIGTERM or SIGINT.
-  process.on("SIGTERM", clusterDestroy);
-  process.on("SIGINT", clusterDestroy);
+  // Cluster can be stopped by SIGTERM or SIGINT.
+  process.on("SIGTERM", clusterStop);
+  process.on("SIGINT", clusterStop);
 
   // initialize bridge master
   bridge = initMaster(new Bridge({
