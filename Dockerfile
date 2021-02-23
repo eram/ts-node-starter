@@ -22,4 +22,4 @@ RUN npm install --production
 RUN ls -al -R
 
 # default docker entry point
-ENTRYPOINT ["npm", "start", "cluster" "cluster.config.js", "--env", "production"]
+ENTRYPOINT ["npm", "start"]
