@@ -45,6 +45,4 @@ describe("kv", () => {
     const found2 = await KV.findOne(where);
     expect(found2).toBeFalsy();
   });
-
-
 });

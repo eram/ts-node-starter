@@ -1,7 +1,6 @@
 import { POJO, ROJO } from "./pojo";
 
 describe("pojo tests", () => {
-
   test("types", () => {
 
     // type
@@ -45,11 +44,9 @@ describe("pojo tests", () => {
     const str = JSON.stringify(pojo, undefined, 1);
     expect(str).toEqual("{\n \"hello\": 0\n}");
   });
-
 });
 
 describe("rojo tests", () => {
-
   test("types", () => {
 
     // type
@@ -72,6 +69,4 @@ describe("rojo tests", () => {
     const p2 = ROJO("[]");
     expect(() => { p2.a = 1; }).toThrow();
   });
-
-
 });

@@ -1,17 +1,17 @@
 import Koa from "koa";
+import { IncomingMessage, ServerResponse } from "http";
+import { Socket } from "net";
 import { initClient } from "../../libs/cluster";
 import { initDb } from "../../models";
 import { setupKoa } from "./setupKoa";
 import { env } from "../../utils";
-import { IncomingMessage, ServerResponse } from "http";
-import { Socket } from "net";
 
 describe("setupKoa tests", () => {
   it("Koa srv created", () => {
 
     // hack to get a bit more coverage
     process.env.NODE_ENV = "production";
-    delete Object(env).__proto__.isDebugging;
+    delete Object(env).__proto__.isDebugging;   // eslint-disable-line
     Object(env).isDebugging = false;
 
     const srv = setupKoa(new Koa(), initClient(), initDb());

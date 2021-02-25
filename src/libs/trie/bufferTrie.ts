@@ -9,7 +9,7 @@ import { INode, Trie } from "./trie";
 // and block the main thread.
 //
 
-const { hasOwnProperty, getOwnPropertyNames, entries } = Object;    // eslint-disable-line
+const { hasOwnProperty, getOwnPropertyNames, entries } = Object;
 
 type Offset = number;
 const MAGIC = "K".charCodeAt(0);
@@ -21,6 +21,9 @@ function isEmptyNode<T>(node: INode<T>): boolean {
 export function mount<T>(buffer: Buffer) {
 
   class BufNode {
+    [key: string]: number | T | boolean | Function | BufNode;
+
+    static emptyNode: BufNode = Object.setPrototypeOf({ "": 0 }, BufNode.prototype);
 
     constructor(nodeOffset: Offset) {
       assert(buffer[nodeOffset + 0] === MAGIC);
@@ -36,23 +39,23 @@ export function mount<T>(buffer: Buffer) {
             const leafLen = buffer.readUInt16LE(offset);
             const leafStr = buffer.toString("utf8", offset + 2, offset + 2 + leafLen);
             const leaf: T = JSON.parse(leafStr);
-            (this as any)[''] = leaf;                               // eslint-disable-line
+            this[""] = leaf;
           } else {
-            (this as any)[kv[0]] = parseInt(kv[1], 32);             // eslint-disable-line
+            this[kv[0]] = parseInt(kv[1], 32);
           }
         }
       }, this);
     }
 
     get isLeaf(): boolean { return ("" in this); }
-    get leaf(): T { return (this as any)['']; }                     // eslint-disable-line
+    get leaf(): T { return this[""] as T; }
     has(key: string): boolean { return (key in this); }
     get(key: string): BufNode | T {
-      let child = (this as any)[key] as number | BufNode | T;         // eslint-disable-line
+      let child = this[key] as number | BufNode | T;
       if (typeof child === "number") {
         // create a new node and replace child
-        child = (child === 0) ? emptyNode : new BufNode(child);       // eslint-disable-line
-        (this as any)[key] = child;                                 // eslint-disable-line
+        child = (child === 0) ? BufNode.emptyNode : new BufNode(child);
+        this[key] = child;
       }
 
       // child is already a node / leaf
@@ -60,35 +63,34 @@ export function mount<T>(buffer: Buffer) {
     }
 
     findSuffix(suffix: string) {
-
-      ///NB!
+      /// NB!
       // I'm keeping here a few implementations of this function that I have profiled.
       // The last one is the fastest - - originates from mapping-trie library
 
       // #1
-      //const keys = Object.getOwnPropertyNames(this);
-      //return keys.find((prop) => (prop && suffix.startsWith(prop)));
+      // const keys = Object.getOwnPropertyNames(this);
+      // return keys.find((prop) => (prop && suffix.startsWith(prop)));
 
       // #2
-      //for (const key in this){
+      // for (const key in this){
       //  if (key && suffix.startsWith(key)) return key;
-      //}
-      //return undefined;
+      // }
+      // return undefined;
 
       // #3
-      //const keys = Object.getOwnPropertyNames(this);
-      //for (let i=1; i <= suffix.length; i++){
+      // const keys = Object.getOwnPropertyNames(this);
+      // for (let i=1; i <= suffix.length; i++){
       //  const sub = suffix.substr(0, i);
       //  if (keys.includes(sub)) return sub;
-      //}
-      //return undefined;
+      // }
+      // return undefined;
 
       // #4
-      //for (let i=1; i <= suffix.length; i++){
+      // for (let i=1; i <= suffix.length; i++){
       //  const sub = suffix.substr(0, i);
       //  if (sub in this) return sub;
-      //}
-      //return undefined;
+      // }
+      // return undefined;
 
       // #5
       const { length } = suffix;
@@ -125,10 +127,9 @@ export function mount<T>(buffer: Buffer) {
       if (rc !== undefined) {
         this._stats.hits++;
         return rc.leaf;
-      } else {
-        this._stats.miss++;
-        return undefined;
       }
+      this._stats.miss++;
+      return undefined;
     }
 
     has(key: string, val?: unknown): boolean {
@@ -165,10 +166,7 @@ export function mount<T>(buffer: Buffer) {
       }
       return (suffix.length === 0) ? node : undefined;
     }
-
   }
-
-  const emptyNode: BufNode = Object.setPrototypeOf({ "": 0 }, BufNode.prototype);
 
   // mount a trie on buffer. returns the new KTrie object
   return new BufTrie(buffer.byteLength) as Readonly<BufTrie>;
@@ -181,14 +179,13 @@ export function requiredSize<T>(trie: Readonly<Trie<T>>) {
   let objects = 0;
 
   function requiredSize_(node: Readonly<INode<T>>) {
-
     if (isEmptyNode(node)) return 0;
 
     objects++;
     let size = 3;                             // base: magic + strLen
-    for (const key in node) {
+    Object.keys(node).forEach(key => {
       if (key !== "") {
-        const childNode = node[key] as Readonly<INode<T>>;
+        const childNode = node[key] as INode<T>;
         size += 2 + key.length + 6;           // 'key:offset;'
         size += requiredSize_(childNode);
       } else {
@@ -202,7 +199,7 @@ export function requiredSize<T>(trie: Readonly<Trie<T>>) {
           size += 2 + leafStr.length;
         }
       }
-    }
+    });
 
     return size;
   }
@@ -211,11 +208,10 @@ export function requiredSize<T>(trie: Readonly<Trie<T>>) {
     rc = requiredSize_(trie.root);
     info(`BufTrie: objects=${objects} size=${Math.ceil(rc / 1024)} KB`);
   } catch (err) {
-    error("BufTrie requiredSize", err.stack | err);
+    error("BufTrie requiredSize", err.stack || err);
   }
   return rc;
 }
-
 
 
 export function dump<T>(trie: Readonly<Trie<T>>, buffer: Buffer) {
@@ -274,7 +270,7 @@ export function dump<T>(trie: Readonly<Trie<T>>, buffer: Buffer) {
   try {
     return dump_(trie.root, 0);
   } catch (err) {
-    error("dump", err.stack | err);
+    error("dump", err.stack || err);
     return 0;
   }
 }

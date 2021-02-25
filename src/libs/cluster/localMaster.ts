@@ -1,6 +1,8 @@
 import { EventEmitter } from "events";
 import { apm, getLogger } from "../../utils";
-import { Bridge, BridgeError, Packet, PktData } from "./bridge";
+import {
+  Bridge, BridgeError, Packet, PktData,
+} from "./bridge";
 
 // when running the client not in a cluster worker, initialize a local master that is
 // based on an EventEmitter (see code in bridge:initClient)
@@ -62,5 +64,4 @@ export class LocalMaster {
     reply(data);
     return true;
   }
-
 }

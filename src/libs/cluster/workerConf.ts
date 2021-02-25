@@ -1,5 +1,6 @@
 import os from "os";
 import * as path from "path";
+import { assert } from "../../utils";
 
 export class WorkerConf {
 
@@ -10,28 +11,28 @@ export class WorkerConf {
    * see https://pm2.keymetrics.io/docs/usage/application-declaration/
    */
   /* eslint-disable @typescript-eslint/naming-convention */
-  name: string;                       // app name
-  script: string;                     // script to run: TS or JS file
-  cwd: string;                        // current dir when launching script
-  args: string;                       // commandline params
-  instances: number;                  // number of workers to run. max = cpu count
-  autorestart: boolean;               // auto restart if worker exit code is not 0
-  max_restarts: number;               // max restart before giveup
+  name: string;                         // app name
+  script: string;                       // script to run: TS or JS file
+  cwd: string;                          // current dir when launching script
+  args: string;                         // commandline params
+  instances: number;                    // number of workers to run. max = cpu count
+  autorestart: boolean;                 // auto restart if worker exit code is not 0
+  max_restarts: number;                 // max restart before giveup
 
-  wait_ready: boolean;                // check that the worker starts listening
-  listen_timeout: number;             // kill worker if not started listening by this timeout
-  restart_delay: number;              // restart after X milliseconds
-  exp_backoff_restart_delay: number;  // further restart delay increased by
+  wait_ready: boolean;                  // check that the worker starts listening
+  listen_timeout: number;               // kill worker if not started listening by this timeout
+  restart_delay: number;                // restart after X milliseconds
+  exp_backoff_restart_delay: number;    // further restart delay increased by
 
-  kill_timeout: number;               // timeout to kill the an unhealthy worker
-  max_memory_restart: number;         // max memory usage for a healthy worker: "50K"/"1024M"/"1G"
-  shutdown_with_message: boolean;     // send worker a SIGTERM or terminate it
-  time: boolean;                      // add time to logs
+  kill_timeout: number;                 // timeout to kill the an unhealthy worker
+  max_memory_restart: number | string;  // max memory usage for a healthy worker: "50K"/"1024M"/"1G"
+  shutdown_with_message: boolean;       // send worker a SIGTERM or terminate it
+  time: boolean;                        // add time to logs
 
-  pid_file: string;                   // dir for pid files. filename "<app_name>-<worker_id>.pid"
-  out_file: string;                   // stdout file. file name is suffixed with worker id
-  error_file: string;                 // stderr file. file name is suffixed with worker id
-  combine_logs: boolean;              // if true log files are combined (no worker id suffix)
+  pid_file: string;                     // dir for pid files. filename "<app_name>-<worker_id>.pid"
+  out_file: string;                     // stdout file. file name is suffixed with worker id
+  error_file: string;                   // stderr file. file name is suffixed with worker id
+  combine_logs: boolean;                // if true log files are combined (no worker id suffix)
   /* eslint-enable @typescript-eslint/naming-convention */
 
   /* these features are not implemented */
@@ -62,7 +63,7 @@ export class WorkerConf {
     this.cwd = path.resolve(String(obj.cwd || "."));
     this.args = Array.isArray(obj.args) ? obj.args.join(" ") : String(obj.args);
     let instances = Number(obj.instances) || 1;
-    instances = (instances < 0) ? numCPUs - 1 : (instances === 0) ? numCPUs : Math.min(numCPUs, instances);
+    instances = (instances < 0) ? numCPUs - 1 : ((instances === 0) ? numCPUs : Math.min(numCPUs, instances));
     this.instances = instances;
     this.autorestart = Boolean(obj.autorestart);
     this.max_restarts = Number(obj.max_restarts) || 0;
@@ -86,10 +87,14 @@ export class WorkerConf {
 
   static toMB(mem: string) {
     let num = Number(mem.substr(0, mem.length - 1)) || 0;
-    switch (mem.substr(mem.length - 1, 1)) {
-      case "K": num *= 1024; break;                 // KB
-      case "M": num *= 1024 * 1024; break;          // MB
-      case "G": num *= 1024 * 1024 * 1024; break;   // GB
+    const s = mem.substr(mem.length - 1, 1);
+    switch (s) {
+      case "K": num *= 1024; break; // KB
+      case "M": num *= 1024 * 1024; break; // MB
+      case "G": num *= 1024 * 1024 * 1024; break; // GB
+      default:
+        assert(Number.parseInt(s) >= 0, "max_memory_restart must be a decimal number or appended with 'K', 'M' or 'G'");
+        num = num * 10 + Number.parseInt(s);
     }
     return num / 1024 / 1024;
   }
@@ -108,7 +113,8 @@ export class WorkerInfo {
 
   constructor(
     public idx: number,
-    public restarts = 0) {
+    public restarts = 0,
+  ) {
     this.state = WorkerState.init;
   }
 
@@ -118,6 +124,4 @@ export class WorkerInfo {
   }
 
   get state() { return this._state; }
-
 }
-

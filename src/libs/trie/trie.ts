@@ -1,11 +1,11 @@
-const trieMapping = require('trie-mapping');  // eslint-disable-line
+const trieMapping = require("trie-mapping");
 
 //
 // Trie class is a wrapper around trie-mapping:
 // A compact key-value store that is especially efficient when storing large strings.
 //
 
-export interface INode<T> extends Record<string, INode<T> | T> { }    // eslint-disable-line
+export interface INode<T> extends Record<string, INode<T> | T> { }
 
 interface ITrie<T> extends Map<string, T> {
   root: INode<T>;
@@ -18,7 +18,6 @@ export class TrieConfig {
 export class Trie<T = undefined> {
 
   readonly ignoreCasing: boolean;
-
   protected readonly _trie: ITrie<T>;
   protected _hits = 0;
   protected _miss = 0;
@@ -59,4 +58,3 @@ export class Trie<T = undefined> {
     };
   }
 }
-

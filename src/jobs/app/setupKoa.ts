@@ -7,7 +7,9 @@ import createRouter from "koa-joi-router";
 import { userAgent } from "koa-useragent";
 import { Sequelize } from "sequelize";
 
-import { env, getLogger, info, LogLevel } from "../../utils";
+import {
+  env, getLogger, info, LogLevel,
+} from "../../utils";
 import { errorHandler, koaOnError, setWarnRespTime } from "../../middleware/errorHandler";
 import { init as staticSite } from "../../middleware/staticSite";
 import { parseToken, requireAuthorization } from "../../middleware/authorization";
@@ -32,7 +34,7 @@ export function setupKoa(koa: Koa, client: Bridge, db: Sequelize) {
 
   const { ROUTER_BASE_PATH, CORS_WHITELIST, NODE_ENV } = process.env;
   const httpLogger = getLogger("http", LogLevel.info);
-  const whitelist: [] = !!CORS_WHITELIST ? JSON.parse(CORS_WHITELIST) : [];
+  const whitelist: [] = CORS_WHITELIST ? JSON.parse(CORS_WHITELIST) : [];
 
   // set app middleware
   koa.on("error", koaOnError)
@@ -49,7 +51,7 @@ export function setupKoa(koa: Koa, client: Bridge, db: Sequelize) {
     }
   }
 
-  koa.use(userAgent)     // addes ctx.userAgent
+  koa.use(userAgent) // addes ctx.userAgent
     .use(bodyParser());
 
   const publicRouter = createRouter();
@@ -75,7 +77,7 @@ export function setupKoa(koa: Koa, client: Bridge, db: Sequelize) {
   return koa;
 }
 
-/***
+/** *
 // app.use(authorizeSecret);
 // app.use(koaJwt(restApp.koaJWTOptions).unless({ path: [/^\/favicon.ico/] }))
 
@@ -86,4 +88,4 @@ app.use(koaHelmet.frameguard('deny'));
 
 // DB connection
 app.use(connectToDbMiddleware(pool.connect, appLogger, config.apps.api.db));
-***/
+** */

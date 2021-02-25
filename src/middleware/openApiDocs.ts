@@ -34,7 +34,8 @@ function generateSpec(router: joiRouter.Router, basePath: string) {
 // add swagger docs and api on this rounter
 export function init(router: joiRouter.Router) {
 
-  const basePath = "/";//router.router?.opts?.prefix || "/";
+  // @ts-expect-error
+  const basePath = router.router?.opts?.prefix || "/";
   const redoc = `
 <!DOCTYPE html>
 <html>

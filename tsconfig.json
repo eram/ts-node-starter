@@ -10,7 +10,8 @@
       "experimentalDecorators": true,
       "emitDecoratorMetadata": true,
       "skipLibCheck": true,
-      "resolveJsonModule": true
+      "resolveJsonModule": true,
+      "typeRoots": ["./node_modules/@types", "./src/types"],      
     },
     "include": [
       "src/**/*",
@@ -18,12 +19,11 @@
       "src/**/index.js",
       "scripts/*.js",
       "scripts/*.ts", 
-      "old/**/*",
     ],
     "paths": {
       "*": [
           "node_modules/*",
-          "src/types/*"
+          "src/types/*.d.ts"
       ]
     }
   }

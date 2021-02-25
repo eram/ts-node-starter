@@ -2,11 +2,10 @@ import { DataTypes, Model, Sequelize } from "sequelize";
 import { assert, copyIn } from "../utils";
 
 export class User extends Model {
-
   // fields
   username: string;
   blocked = false;
-  validTokens: number[] = [];   // list of token's claims.iat
+  validTokens: number[] = []; // list of token's claims.iat
 
   // standard fields
   id: bigint;
@@ -29,7 +28,7 @@ export function init(sequelize: Sequelize) {
       autoIncrement: true,
       // the retrun value of a BIGINT may be a string or a number depending on it's size.
       // we need to always return a bigint
-      get: function () {
+      get() {
         const rc = this.getDataValue("id");
         return BigInt(String(rc)).valueOf();
       },

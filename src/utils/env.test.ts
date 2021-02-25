@@ -11,7 +11,7 @@ describe("env", () => {
   });
 
   test("cover defaults", () => {
-    const save = Object.assign({}, process.env);
+    const save = { ...process.env };
     delete process.env.NODE_ENV;
     delete process.env.DOT_ENV_FILE;
     delete process.env.APP_NAME;
@@ -25,5 +25,4 @@ describe("env", () => {
   test("print info", () => {
     env.print();
   });
-
 });

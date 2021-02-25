@@ -1,10 +1,10 @@
 import * as Koa from "koa";
 import { URL, URLSearchParams } from "url";
 import joiRouter from "koa-joi-router";
-import { init } from "./oauthGithub";
-import { IDictionary } from "../utils";
 import axios from "axios";
 import { Options } from "sequelize";
+import { init } from "./oauthGithub";
+import { IDictionary } from "../utils";
 import { initDb } from "../models";
 
 const href = "http://a.local/jest";
@@ -84,9 +84,7 @@ describe("oauthGithub tests", () => {
       cookies: { set: jest.fn((name, val, _opts) => { expect(name && val).toBeTruthy(); return ctx; }) } as never,
     };
     const params = new URLSearchParams(url.search);
-    for (const k of params) {
-      ctx.query[k[0]] = k[1];
-    }
+    params.forEach((n, v) => { ctx.query[v] = n; });
 
     await oauth.login(ctx as Koa.Context, async () => Promise.resolve());
     expect(ctx.redirect).toBeCalled();
@@ -102,7 +100,7 @@ describe("oauthGithub tests", () => {
     const mock1 = jest.spyOn(axios, "get").mockReturnValueOnce(Promise.resolve({
       status: 200,
       data: {
-        access_token: "aToken",     // eslint-disable-line
+        access_token: "aToken", // eslint-disable-line
       },
     }));
 
@@ -195,7 +193,7 @@ describe("oauthGithub tests", () => {
     const mock1 = jest.spyOn(axios, "get").mockReturnValue(Promise.resolve({
       status: 200,
       body: {
-        access_token: "aToken",  // eslint-disable-line
+        access_token: "aToken", // eslint-disable-line
       },
     }));
 
@@ -203,7 +201,7 @@ describe("oauthGithub tests", () => {
     const mock2 = jest.spyOn(axios, "request").mockReturnValue(Promise.resolve({
       status: 200,
       body: {
-        data: null,             // eslint-disable-line
+        data: null,   // eslint-disable-line
         errors: [{ message: "test error" }],
       },
     }));
@@ -216,5 +214,4 @@ describe("oauthGithub tests", () => {
     expect(mock2).toHaveBeenCalledTimes(0);
     mock2.mockClear();
   });
-
 });

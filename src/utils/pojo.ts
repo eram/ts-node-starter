@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-export interface IDictionary<T = string> { [key: string]: T}       // eslint-disable-line
+export interface IDictionary<T = string> { [key: string]: T }
 export type Immutable<T> = { readonly [P in keyof T]: T[P] };
 
 //
 // plain old javascript object >> JSON extention
 //
-export interface POJO extends IDictionary<any> {  // eslint-disable-line
+export interface POJO extends IDictionary<any> {                      // eslint-disable-line
   stringify?: (value: any, replacer?: (this: any, key: string, value: any) => any, space?: number | string) => string;
   parse?: (text: string, reviver?: (this: any, key: string, value: any) => any) => POJO;
 }
@@ -15,7 +15,7 @@ function toPOJO(text: string | unknown, reviver?: (this: any, key: string, value
   return obj as POJO;
 }
 
-export const POJO: (POJO & typeof toPOJO) = toPOJO;     // eslint-disable-line
+export const POJO: (POJO & typeof toPOJO) = toPOJO;                   // eslint-disable-line
 POJO.stringify = JSON.stringify;
 POJO.parse = toPOJO;
 
@@ -34,6 +34,6 @@ function toROJO(text: string | unknown, reviver?: (this: any, key: string, value
   return Object.freeze(obj) as ROJO;
 }
 
-export const ROJO: (Readonly<ROJO> & typeof toROJO) = toROJO; // eslint-disable-line
+export const ROJO: (Readonly<ROJO> & typeof toROJO) = toROJO;         // eslint-disable-line
 Object(ROJO).stringify = JSON.stringify;
 Object(ROJO).parse = toROJO;

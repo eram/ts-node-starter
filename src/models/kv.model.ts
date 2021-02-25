@@ -25,7 +25,6 @@ export class KV extends Model {
     }
     return true;
   }
-
 }
 
 export function init(sequelize: Sequelize) {

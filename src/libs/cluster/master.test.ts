@@ -7,7 +7,7 @@ describe("bridge master", () => {
   test("ping-pong msg to master", async () => {
 
     const mock = new LocalMaster();
-    const cb = jest.fn(mock.master.addCallback);  // eslint-disable-line
+    const cb = jest.fn(mock.master.addCallback);
     mock.master.addCallback = cb;
 
     initMaster(mock.master);
@@ -21,7 +21,7 @@ describe("bridge master", () => {
 
   test("signal msg to master", async () => {
 
-    const cb = jest.fn((_signal: NodeJS.Signals) => { return; });
+    const cb = jest.fn((_signal: NodeJS.Signals) => { });
     process.once("SIGUSR2", cb);
 
     const mock = new LocalMaster();
@@ -33,6 +33,7 @@ describe("bridge master", () => {
   });
 
   test("require msg to master", async () => {
+
     const mock = new LocalMaster();
     initMaster(mock.master);
     const resp = await mock.client.send({ msg: "require", value: __filename }, "master", 0);
@@ -42,6 +43,7 @@ describe("bridge master", () => {
   });
 
   test("unknown msg to master", async () => {
+
     const mock = new LocalMaster();
     initMaster(mock.master);
     const resp = await mock.client.send("junk" as never, "master", 0);
@@ -49,7 +51,6 @@ describe("bridge master", () => {
     expect(resp.error).toBeTruthy();
     expect(resp.error).toEqual("junk unknown");
   });
-
 });
 
 // function is used by the 'require' test above

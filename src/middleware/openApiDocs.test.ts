@@ -6,7 +6,9 @@ describe("openApiDocs middleware tests", () => {
 
   test("ctx is setup correctly", () => {
 
-    const router = init(joiRouter());
+    const joirouter = joiRouter();
+    joirouter.prefix("2");
+    const router = init(joirouter);
 
     expect(router).not.toBeUndefined();
     expect(router.routes).not.toBeUndefined();
@@ -19,7 +21,7 @@ describe("openApiDocs middleware tests", () => {
     const handler1 = router.routes[0].handler as joiRouter.NestedHandler;
     const apiDoc = handler1[0] as joiRouter.FullHandler;
     const ctx: Partial<Koa.Context> = {
-      set: () => { return; },
+      set: () => { },
     };
 
     await apiDoc(ctx as Koa.Context, async () => Promise.resolve());

@@ -1,5 +1,5 @@
-import * as Koa from "koa";
 import joiRouter from "koa-joi-router";
+import Koa from "../utils/koa";
 import { initClient } from "../libs/cluster";
 import { initDb, Options, Sequelize } from "../models";
 import { init } from "./healthcheck";
@@ -32,14 +32,14 @@ describe("healthcheck middleware", () => {
       expect(typeof (field) === "string" && typeof (val) === "string").toBeTruthy();
     });
 
-    const ctx: Partial<Koa.Context> = {
+    const ctx: Partial<Koa.Context2> = {
       state: { user: "test user" },
       status: 0,
       body: {},
-      set: setFn as never,  // 'set' is not assignable in d.ts. hack it.
+      set: setFn as never, // 'set' is not assignable in d.ts. hack it.
     };
 
-    await handler(ctx as Koa.Context, async () => Promise.resolve());
+    await handler(ctx as Koa.Context2, async () => Promise.resolve());
 
     expect(setFn).toHaveBeenCalledTimes(1);
     expect(ctx.status).toEqual(200);
@@ -63,13 +63,13 @@ describe("healthcheck middleware", () => {
       expect(typeof (field) === "string" && typeof (val) === "string").toBeTruthy();
     });
 
-    const ctx: Partial<Koa.Context> = {
+    const ctx: Partial<Koa.Context2> = {
       status: 0,
       query: { apm: "true" },
-      set: setFn as never,  // 'set' is not assignable in d.ts. hack it.
+      set: setFn as never, // 'set' is not assignable in d.ts. hack it.
     };
 
-    await handler(ctx as Koa.Context, async () => Promise.resolve());
+    await handler(ctx as Koa.Context2, async () => Promise.resolve());
 
     expect(setFn).toHaveBeenCalledTimes(1);
     expect(ctx.status).toEqual(200);
@@ -93,17 +93,16 @@ describe("healthcheck middleware", () => {
       expect(typeof (field) === "string" && typeof (val) === "string").toBeTruthy();
     });
 
-    const ctx: Partial<Koa.Context> = {
+    const ctx: Partial<Koa.Context2> = {
       status: 0,
       body: {},
-      set: setFn as never,  // 'set' is not assignable in d.ts. hack it.
+      set: setFn as never, // 'set' is not assignable in d.ts. hack it.
     };
 
-    await handler(ctx as Koa.Context, async () => Promise.resolve());
+    await handler(ctx as Koa.Context2, async () => Promise.resolve());
 
     expect(ctx.status).toEqual(200);
     expect(ctx.body).toBeTruthy();
     expect(ctx.body.ok).toEqual(false);
   });
-
 });

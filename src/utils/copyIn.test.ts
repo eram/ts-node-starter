@@ -14,7 +14,7 @@ class C {
 test("copyIn on a class", () => {
 
   const source1 = new C(1);
-  const proto1 = Object.getPrototypeOf(source1);   // C
+  const proto1 = Object.getPrototypeOf(source1); // C
 
   const source2 = { two: 2 };
   const out2 = copyIn(source1, source2);
@@ -24,11 +24,10 @@ test("copyIn on a class", () => {
   expect(out2.one).toEqual(1);
 });
 
-
 test("merge", () => {
 
   const source1 = new C(1);
-  const proto1 = Object.getPrototypeOf(source1);   // C
+  const proto1 = Object.getPrototypeOf(source1); // C
 
   const source2 = { test: 2 };
   const out2 = merge(source1, source2);

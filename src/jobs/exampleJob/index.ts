@@ -1,5 +1,5 @@
-import { env, getLogger, LogLevel, sleep } from "../../utils";
 import * as path from "path";
+import { env, getLogger, LogLevel, sleep } from "../../utils";
 
 async function main() {
   const jobName = path.basename(__dirname);

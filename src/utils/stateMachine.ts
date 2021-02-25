@@ -35,26 +35,13 @@ export class StateMachine<STATE, EVENT> {
   getState(): STATE { return this.current; }
 
   can(event: EVENT): boolean {
-
-    for (const trans of this.transitions) {
-      if (trans.fromState === this.current && trans.event === event) {
-        return true;
-      }
-    }
-
-    return false;
+    return this.transitions.some((trans) => (trans.fromState === this.current && trans.event === event));
   }
 
   isFinal(): boolean {
     // search for a transition that starts from current state.
     // if none is found it's a terminal state.
-    for (const trans of this.transitions) {
-      if (trans.fromState === this.current) {
-        return false;
-      }
-    }
-
-    return true;
+    return this.transitions.every((trans) => (trans.fromState !== this.current));
   }
 
   // post event asynch
@@ -63,14 +50,11 @@ export class StateMachine<STATE, EVENT> {
 
       // delay execution to make it async
       setTimeout((me: this) => {
-        let found = false;
 
         // find transition
-        for (const tran of me.transitions) {
+        const found = this.transitions.some((tran) => {
           if (tran.fromState === me.current && tran.event === event) {
-
             me.current = tran.toState;
-            found = true;
             if (tran.cb) {
               try {
                 tran.cb(args)
@@ -83,9 +67,10 @@ export class StateMachine<STATE, EVENT> {
             } else {
               resolve();
             }
-            break;
+            return true;
           }
-        }
+          return false;
+        });
 
         // no such transition
         if (!found) {
@@ -94,6 +79,5 @@ export class StateMachine<STATE, EVENT> {
         }
       }, 0, this);
     });
-
   }
 }

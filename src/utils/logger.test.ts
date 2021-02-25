@@ -12,13 +12,13 @@ afterAll(() => {
 describe("logger tests", () => {
 
   it("created", () => {
-    const nullFn = (_level: logger.LogLevel, _txt: string) => { return; };
+    const nullFn = (_level: logger.LogLevel, _txt: string) => { };
     const log = logger.getLogger("test1", logger.LogLevel.trace, nullFn);
     expect(log).not.toBeUndefined();
   });
 
   it("logs thru logger function", () => {
-    const nullFn = jest.fn((_level: logger.LogLevel, _txt: string) => { return; });
+    const nullFn = jest.fn((_level: logger.LogLevel, _txt: string) => { });
     const log = logger.getLogger("test2", logger.LogLevel.critical, nullFn);
     log.critical("test");
     expect(nullFn).toHaveBeenCalledTimes(1);
@@ -29,7 +29,7 @@ describe("logger tests", () => {
   });
 
   it("check all types of log levels", () => {
-    const nullFn = jest.fn((_level: logger.LogLevel, _txt: string) => { return; });
+    const nullFn = jest.fn((_level: logger.LogLevel, _txt: string) => { });
     const log = logger.getLogger("test3", logger.LogLevel.debug, nullFn);
     log.debug(1);
     log.trace(2);
@@ -41,7 +41,7 @@ describe("logger tests", () => {
   });
 
   it("check level works", () => {
-    const nullFn = jest.fn((_level: logger.LogLevel, _txt: string) => { return; });
+    const nullFn = jest.fn((_level: logger.LogLevel, _txt: string) => { });
     const log = logger.getLogger("test4", logger.LogLevel.warn, nullFn);
     log.debug(0);
     log.trace(0);
@@ -53,7 +53,7 @@ describe("logger tests", () => {
   });
 
   it("check assertion throws in debug", () => {
-    const nullFn = (_level: logger.LogLevel, _txt: string) => { return; };
+    const nullFn = (_level: logger.LogLevel, _txt: string) => { };
     const save = process.env.JEST_WORKER_ID;
     delete process.env.LOG_ADD_TIME;
     logger.assert(!!save);
@@ -71,5 +71,4 @@ describe("logger tests", () => {
 
     process.env.JEST_WORKER_ID = save;
   });
-
 });

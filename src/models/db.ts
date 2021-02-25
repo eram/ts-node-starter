@@ -2,6 +2,7 @@ import { Dialect, Sequelize, Options } from "sequelize";
 import { assert, copyIn, error } from "../utils";
 import * as User from "./user.model";
 import * as KV from "./kv.model";
+
 export { Sequelize, Options } from "sequelize";
 
 let sequelize: Sequelize;
@@ -9,7 +10,6 @@ let sequelize: Sequelize;
 export function initDb(opts: Options = {}) {
 
   if (!sequelize) {
-
     const { DB_NAME, DB_USER, DB_PWD, DB_DIALECT, DB_HOST, DB_PORT, DB_STORAGE = "", DB_VERBOSE = "false" } = process.env;
 
     const o = copyIn<Options>({
@@ -42,7 +42,7 @@ export function initDb(opts: Options = {}) {
     setImmediate(() => {
       Object.keys(sequelize.models).forEach(key => {
         const model = sequelize.models[key];
-        const associate = Object(model).associate;
+        const { associate } = Object(model);
         if (typeof associate === "function") {
           associate();
         }
@@ -54,7 +54,7 @@ export function initDb(opts: Options = {}) {
 }
 
 
-export async function checkDbAlive(){
+export async function checkDbAlive() {
   try {
     const count = await User.User.count();
     return Number.isInteger(count);

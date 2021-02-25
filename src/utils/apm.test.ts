@@ -1,4 +1,6 @@
-import { Counter, Meter, Histogram, apm, count } from "./apm";
+import {
+  Counter, Meter, Histogram, apm, count,
+} from "./apm";
 import { sleep } from "./asyncs";
 
 describe("Counter tests", () => {
@@ -137,7 +139,7 @@ describe("Counter tests", () => {
     expect(mtr1.val).toEqual(merge.val);
 
     // merge in create
-    const mtr3 = Meter.instance("mtr1");          // same as above mtr1
+    const mtr3 = Meter.instance("mtr1"); // same as above mtr1
     expect(mtr3.val).toEqual(mtr1.val);
 
     const mtr4 = Meter.instance("mtr1", mtr2); // same as above mtr1
@@ -164,11 +166,10 @@ describe("Counter tests", () => {
     expect(merge.val).toEqual(1.5);
 
     // merge in create
-    const mtr3 = Histogram.instance("hst1");     // same as above hst1
+    const mtr3 = Histogram.instance("hst1");        // same as above hst1
     expect(mtr3.val).toEqual(hst1.val);
 
     const mtr4 = Histogram.instance("hst1", hst2);  // same as above hst1
     expect(mtr4.val).toEqual(1.5);
   });
-
 });

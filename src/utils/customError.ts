@@ -28,10 +28,9 @@ export class CustomError extends Error {
 //
 export const errno = merge({
   getStr(_errno: number) {
-    for (const key in this) {
+    for (const key in this) {                 // eslint-disable-line
       if (this[key] === _errno) return key;
     }
     return _errno.toString();
   },
 }, os.constants.errno);
-

@@ -1,11 +1,10 @@
-import { ArrayAsync, sleep } from "./asyncs";
+import { AsyncArray, sleep } from "./asyncs";
 
-describe("ArrayAsync", () => {
-
-  test("ArrayAsync.asyncForEach", async () => {
+describe("AsyncArray", () => {
+  test("AsyncArray.asyncForEach", async () => {
 
     const start = Date.now();
-    const arr = new ArrayAsync(1, 2);
+    const arr = new AsyncArray(1, 2);
 
     const fn = jest.fn(async (_item) => {
       await sleep(50);
@@ -18,10 +17,10 @@ describe("ArrayAsync", () => {
     expect(fn).toHaveBeenCalledTimes(2);
   });
 
-  test("ArrayAsync.asyncForAll", async () => {
+  test("AsyncArray.asyncForAll", async () => {
 
     const start = Date.now();
-    const arr = new ArrayAsync(1, 2);
+    const arr = new AsyncArray(1, 2);
 
     const fn = jest.fn(async (_item) => {
       await sleep(50);
@@ -34,4 +33,3 @@ describe("ArrayAsync", () => {
     expect(fn).toHaveBeenCalledTimes(2);
   });
 });
-

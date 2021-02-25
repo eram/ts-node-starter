@@ -1,7 +1,8 @@
-process.env.BRIDGE_TESTING = "true";
 import { Bridge, PktData } from "./bridge";
 import { initClient } from "./client";
 import { LocalMaster } from "./localMaster";
+
+process.env.BRIDGE_TESTING = "true";
 
 describe("master to client comms", () => {
 
@@ -27,7 +28,6 @@ describe("master to client comms", () => {
   });
 
   test("master can ping client", async () => {
-
     const client = initClient();
     const master: Bridge = Object(client).master; // hack for unit testing
     expect(master).toBeInstanceOf(Bridge);
@@ -52,7 +52,7 @@ describe("master to client comms", () => {
 
     let resp: PktData;
     try {
-      resp = await master.send({ msg: 'junk' as any }, 0, 0); // eslint-disable-line
+      resp = await master.send({ msg: "junk" as "ping" }, 0, 0);
     } catch (err) {
       console.error("master.send throws 2", err.stack || err);
       throw err;
@@ -78,7 +78,7 @@ describe("master to client comms", () => {
 
   test("master signal to client", async () => {
 
-    const cb = jest.fn((_signal: NodeJS.Signals) => { return; });
+    const cb = jest.fn((_signal: NodeJS.Signals) => { });
     process.once("SIGUSR2", cb);
 
     const client = initClient();
@@ -115,5 +115,4 @@ describe("master to client comms", () => {
     expect(resp.msg).toEqual("apm");
     expect(typeof resp.apm).toEqual("object");
   });
-
 });

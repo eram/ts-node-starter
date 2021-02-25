@@ -1,10 +1,12 @@
+/* eslint-disable global-require */
 import * as cluster from "cluster";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import * as inspector from "inspector";
-const pkg = require('../../package.json');  // eslint-disable-line
 import { LogLevel, getLogger, hookConsole } from "./logger";
+
+const pkg = require("../../package.json");
 
 class LoadEnv {
 
@@ -14,7 +16,6 @@ class LoadEnv {
   readonly releaseId = process.env.RELEASE_ID || "debug";
 
   constructor() {
-
     // console is mine!
     hookConsole();
 
@@ -24,13 +25,12 @@ class LoadEnv {
   }
 
   reload() {
-
-    const env = process.env;
+    const { env } = process;
 
     // load .env according to environment with defual to .env
     env.NODE_ENV = env.NODE_ENV || "development";
-    env.DOT_ENV_FILE = env.DOT_ENV_FILE || path.resolve(".env." + env.NODE_ENV);
-    const dotenv = require('dotenv').config({       // eslint-disable-line
+    env.DOT_ENV_FILE = env.DOT_ENV_FILE || path.resolve(`.env.${env.NODE_ENV}`);
+    require("dotenv").config({
       path: fs.existsSync(env.DOT_ENV_FILE) ? env.DOT_ENV_FILE : undefined,
     });
 
@@ -43,12 +43,13 @@ class LoadEnv {
     // initialize global logger
     // LOG_LEVEL can be a number 1-6 or a level string (e.g. "warn")
     let level = Number(env.LOG_LEVEL);
-    if (!level) for (level = 0; level < LogLevel.critical; level++) {
-      if (LogLevel[level] === env.LOG_LEVEL) break;
+    if (!level) {
+      for (level = 0; level < LogLevel.critical; level++) {
+        if (LogLevel[level] === env.LOG_LEVEL) break;
+      }
     }
     getLogger().level = level;
   }
-
 
   print(logger = getLogger()) {
     const { APP_NAME, HOSTNAME, NODE_ENV, POD_NAME, POD_NAMESPACE } = process.env;
