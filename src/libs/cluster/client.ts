@@ -1,8 +1,8 @@
 import cluster from "cluster";
+import * as os from "os";
 import { initMaster } from "./master";
 import { apm, assert, error, getLogger, info, ROJO } from "../../utils";
 import { LocalMaster } from "./localMaster";
-import * as os from "os";
 import { Bridge, Packet, PktData } from "./bridge";
 
 
@@ -30,7 +30,7 @@ export function initClient(): Bridge {
     // initialize a client to cluster
     client = new Bridge({
       id: cluster.worker.id,
-      send: (packat: Packet) => process.send(packat),     // send to cluster
+      send: (packat: Packet) => process.send(packat), // send to cluster
       onPkt: (cb: (packet: Packet) => void) => process.on("message", cb),
     }, getLogger());
 
@@ -58,10 +58,12 @@ export function initClient(): Bridge {
     switch (data.msg) {
 
       case "ping":
-        data.msg = "pong";
-        data.cpu = Math.ceil(100 * os.loadavg()[0]); // last minute avg CPU for this core. process.cpuUsage()
-        const mem = process.memoryUsage();
-        data.mem = Math.ceil((mem.rss + mem.heapUsed + mem.external) / 1024 / 1024); // in MB
+        {
+          data.msg = "pong";
+          data.cpu = Math.ceil(100 * os.loadavg()[0]); // last minute avg CPU for this core.
+          const mem = process.memoryUsage();
+          data.mem = Math.ceil((mem.rss + mem.heapUsed + mem.external) / 1024 / 1024); // in MB
+        }
         break;
 
       case "signal":
@@ -98,4 +100,3 @@ export function initClient(): Bridge {
   client.addCallback(defaultClientHandler);
   return client;
 }
-

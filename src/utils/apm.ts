@@ -1,4 +1,6 @@
-import { IDictionary, env, assert } from "./";
+import { IDictionary } from "./pojo";
+import { env } from "./env";
+import { assert } from "./logger";
 import { copyIn, merge as merge1 } from "./copyIn";
 
 const counters: IDictionary<Counter> = {};
@@ -7,9 +9,7 @@ const histograms: IDictionary<Histogram> = {};
 
 export const apm = {
   get counters() { return counters as Readonly<IDictionary<Readonly<Counter>>>; },
-
   get meters() { return meters as Readonly<IDictionary<Readonly<Meter>>>; },
-
   get histograms() { return histograms as Readonly<IDictionary<Readonly<Histogram>>>; },
 
   getAll() {
@@ -18,30 +18,30 @@ export const apm = {
       meters: {} as IDictionary<number>,
       histograms: {} as IDictionary<Readonly<IDictionary<number>>>,
     };
-    for (const k in counters) {
+    Object.keys(counters).forEach((k) => {
       rc.counters[k] = counters[k].val;
-    }
-    for (const k in meters) {
+    });
+    Object.keys(meters).forEach((k) => {
       rc.meters[k] = meters[k].val;
-    }
-    for (const k in histograms) {
+    });
+    Object.keys(histograms).forEach((k) => {
       rc.histograms[k] = histograms[k].percentiles([0.5, 0.75, 0.95, 0.99, 0.999]);
-    }
+    });
     return rc as Readonly<typeof rc>;
   },
 
   reset(deleteCounters = false) {
     [counters, meters, histograms].forEach(cnt => {
-      Object.keys(cnt).forEach(key => {
+      Object.keys(cnt).forEach((key) => {
         deleteCounters ? delete cnt[key] : cnt[key].reset();
       });
     });
   },
 };
 
-/***
+/** *
  * the below is losly based on @pm2\io\build\main\utils\metrics library
- ***/
+ ** */
 
 interface IApm<T> {
   reset: () => void;
@@ -119,7 +119,6 @@ class SortedArray<T extends SortedElem> extends Array<T> implements IApm<SortedA
   pop() {
     const root = this[0];
     const last = [].pop.bind(this)();
-    //const last = this.pop();
     if (this.length > 0) {
       this[0] = last;
       this._sink(0);
@@ -141,7 +140,6 @@ class SortedArray<T extends SortedElem> extends Array<T> implements IApm<SortedA
   get val() { return this.first().value; }
   get isUsed() { return this.length > 0; }
 
-
   private _bubble(bubbleIndex: number) {
     const bubbleElement = this[bubbleIndex];
     const bubbleScore = this._score(bubbleElement);
@@ -149,8 +147,7 @@ class SortedArray<T extends SortedElem> extends Array<T> implements IApm<SortedA
       const parentIndex = this._parentIdx(bubbleIndex);
       const parentElement = this[parentIndex];
       const parentScore = this._score(parentElement);
-      if (bubbleScore <= parentScore)
-        break;
+      if (bubbleScore <= parentScore) break;
       this[parentIndex] = bubbleElement;
       this[bubbleIndex] = parentElement;
       bubbleIndex = parentIndex;
@@ -160,16 +157,15 @@ class SortedArray<T extends SortedElem> extends Array<T> implements IApm<SortedA
   private _sink(sinkIndex: number) {
     const sinkElement = this[sinkIndex];
     const sinkScore = this._score(sinkElement);
-    const length = this.length;
+    const { length } = this;
     while (true) {
       let swapIndex;
       let swapScore;
       let swapElement;
       const childIndexes = this._childIdx(sinkIndex);
-      for (let i = 0; i < childIndexes.length; i++) {   // eslint-disable-line
+      for (let i = 0; i < childIndexes.length; i++) {
         const childIndex = childIndexes[i];
-        if (childIndex >= length)
-          break;
+        if (childIndex >= length) break;
         const childElement = this[childIndex];
         const childScore = this._score(childElement);
         if (childScore > sinkScore && (swapScore === undefined || swapScore < childScore)) {
@@ -178,8 +174,7 @@ class SortedArray<T extends SortedElem> extends Array<T> implements IApm<SortedA
           swapElement = childElement;
         }
       }
-      if (swapIndex === undefined)
-        break;
+      if (swapIndex === undefined) break;
       this[swapIndex] = sinkElement;
       this[sinkIndex] = swapElement;
       sinkIndex = swapIndex;
@@ -194,10 +189,7 @@ class SortedArray<T extends SortedElem> extends Array<T> implements IApm<SortedA
 
 // Exponentially Decaying Sample
 class Sample implements IApm<Sample> {
-
-  private readonly _elems = new SortedArray(undefined, (elem: SortedElem) => {
-    return -elem.priority;
-  });
+  private readonly _elems = new SortedArray(undefined, (elem: SortedElem) => -elem.priority);
   private readonly _rescaleInterval = 1 * 1000 * 60 * 60;
   private readonly _alpha = 0.015;
   private readonly _size = 1028;
@@ -236,8 +228,7 @@ class Sample implements IApm<Sample> {
       this._elems.pop();
       this._elems.addElems([elem]);
     }
-    if (now >= this._nextRescale)
-      this._rescale(now);
+    if (now >= this._nextRescale) this._rescale(now);
   }
 
   get val() { return this._elems.first().value; }
@@ -294,7 +285,7 @@ export class Counter extends CounterParams implements IApm<CounterParams> {
   }
 
   get isUsed() {
-    return this._count != 0;
+    return this._count !== 0;
   }
 
   add(n = 1) {
@@ -328,7 +319,7 @@ export class Meter extends MeterParams implements IApm<MeterParams> {
       return;
     }
 
-    //TODO: merge all meters' intervals into a single call
+    // TODO: merge all meters' intervals into a single call
     setInterval((self: Meter) => {
       self._rate.tick();
     }, this._tickInterval, this).unref();
@@ -369,7 +360,8 @@ export class Meter extends MeterParams implements IApm<MeterParams> {
 
 
 class HistogramParams {
-  _defVal: "count" | "ema" | "max" | "mean" | "median" | "min" | "p75" | "p95" | "p99" | "p999" | "sum" | "variance" = "median";
+  _defVal: "count" | "ema" | "max" | "mean" | "median"
+  | "min" | "p75" | "p95" | "p99" | "p999" | "sum" | "variance" = "median";
   _min: number;
   _max: number;
   _count = 0;
@@ -417,8 +409,7 @@ export class Histogram extends HistogramParams implements IApm<HistogramParams> 
 
   reset() {
     this._sample.reset();
-    this._min = this._max = this._count = this._sum
-      = this._varianceM = this._varianceS = this._ema = 0;
+    this._min = this._max = this._count = this._sum = this._varianceM = this._varianceS = this._ema = 0;
   }
 
   merge(other: Partial<HistogramParams>) {
@@ -448,7 +439,7 @@ export class Histogram extends HistogramParams implements IApm<HistogramParams> 
 
   percentiles(percentiles: number[]) {
     const values = this._sample.toArray()
-      .sort((a, b) => (a === b) ? 0 : a - b);
+      .sort((a, b) => ((a === b) ? 0 : a - b));
     const results: IDictionary<number> = {};
     percentiles.forEach((percentile) => {
       if (!values.length) {
@@ -528,24 +519,28 @@ export class Histogram extends HistogramParams implements IApm<HistogramParams> 
   }
 
   private _updateVariance(value: number) {
-    if (this._count === 1)
-      return this._varianceM = value;
-    const oldM = this._varianceM;
-    this._varianceM += ((value - oldM) / this._count);
-    this._varianceS += ((value - oldM) * (value - this._varianceM));
+    if (this._count === 1) {
+      this._varianceM = value;
+    } else {
+      const oldM = this._varianceM;
+      this._varianceM += ((value - oldM) / this._count);
+      this._varianceS += ((value - oldM) * (value - this._varianceM));
+    }
+    return this._varianceM;
   }
 
   private _updateEma(value: number) {
-    if (this._count <= 1)
-      return this._ema = this._calculateMean();
-    const alpha = 2 / (1 + this._count);
-    this._ema = value * alpha + this._ema * (1 - alpha);
+    if (this._count <= 1) {
+      this._ema = this._calculateMean();
+    } else {
+      const alpha = 2 / (1 + this._count);
+      this._ema = value * alpha + this._ema * (1 - alpha);
+    }
+    return this._ema;
   }
 
   private _calculateMean() { return (!this._count) ? 0 : this._sum / this._count; }
-
   private _calculateVariance() { return (this._count <= 1) ? undefined : this._varianceS / (this._count - 1); }
-
   private _getPercentile(p: number) { return this.percentiles([p])[p]; }
 }
 

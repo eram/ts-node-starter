@@ -31,14 +31,14 @@ export class Packet<T extends PktData = PktData> {
 
 // transport mechanism for packets
 interface IPort {
-  readonly id: Dest;                // my worker.id, 'master'
+  readonly id: Dest;                      // my worker.id, 'master'
   send: (packat: Packet) => void;
   onPkt: (cb: (packet: Packet) => void) => void;
 }
 
 export class Bridge {
 
-  private readonly _pendingReplies = new Map<number, { resolve: (value: PktData) => void; reject: (reason: BridgeError) => void }>();
+  private readonly _pending = new Map<number, { resolve: (val: PktData) => void; reject: (reason: BridgeError) => void; }>();
   private readonly _callbacks = new Array<Callback>();
   private readonly _defTimeout = env.isDebugging ? 0 : 2000;
 
@@ -47,14 +47,14 @@ export class Bridge {
     _port.onPkt((packet: Packet) => {
       // this is called when a packet arrives at the client/master
       if (!packet || !packet._topic || packet._topic !== PKT_TOPIC) return;
-      const pending = this._pendingReplies.get(packet._pktId);
+      const pending = this._pending.get(packet._pktId);
       if (!pending) {
         // dispatch request
         delete packet._error;
         delete packet._data.error;
         _log.assert(!!this._callbacks.length, "no callbacks defined on Dispatcher");
         if (this._callbacks.length) {
-          const handled = this._callbacks.some(cb => cb(packet._data, this._reply(packet)));
+          const handled = this._callbacks.some((cb) => cb(packet._data, this._reply(packet)));
           if (!handled) {
             this._reply(packet)({
               msg: packet._data.msg,
@@ -64,7 +64,7 @@ export class Bridge {
         }
       } else {
         // complete response
-        this._pendingReplies.delete(packet._pktId);
+        this._pending.delete(packet._pktId);
         // cluster-bridge error
         if (packet._error) {
           pending.reject(new BridgeError(packet._error));
@@ -90,8 +90,8 @@ export class Bridge {
     const cbs = [...this._callbacks];
     const before = cbs.length;
     this._callbacks.length = 0;
-    if (!!cb){
-      this._callbacks.concat(cbs.filter(me => me !== cb));
+    if (cb) {
+      this._callbacks.concat(cbs.filter((me) => me !== cb));
     }
     return (before !== this._callbacks.length);
   }
@@ -110,13 +110,13 @@ export class Bridge {
       }
 
       const req = new Packet(this._port.id, to, data);
-      this._pendingReplies.set(req._pktId, { resolve, reject });
+      this._pending.set(req._pktId, { resolve, reject });
 
       if (timeout > 0) {
         setTimeout((id) => {
-          const pending = this._pendingReplies.get(id);
+          const pending = this._pending.get(id);
           if (pending) {
-            this._pendingReplies.delete(req._pktId);
+            this._pending.delete(req._pktId);
             pending.reject(new BridgeError(`message ${id} timeout`));
           }
         }, timeout, req._pktId);
@@ -167,11 +167,11 @@ export class Bridge {
       if (packet._shouldReply) {
         const reply = new Packet(
           packet._dest === "bcast" ? "master" : packet._dest,
-          packet._source, data, false, packet._pktId);
+          packet._source, data, false, packet._pktId,
+        );
         this._log.info(`reply ${reply._data.msg}`, reply);
         this._port.send(reply);
       }
     };
   }
 }
-

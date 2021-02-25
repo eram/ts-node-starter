@@ -1,8 +1,7 @@
-
-import { Context, Next } from "koa";
+import * as Cookies from "cookies";
+import Koa from "koa";
 import { User } from "../models";
 import { signToken, verifyToken } from "../utils";
-import * as Cookies from "cookies";
 
 const MAX_USER_TOKENS = Number(process.env.MAX_USER_TOKENS) || 10;
 const USER_IS_BLCOKED = "user is blocked";
@@ -11,9 +10,13 @@ const USER_IS_BLCOKED = "user is blocked";
 const userCache = (() => {
 
   const USER_CACHE_TIMEOUT = Number(process.env.USER_CACHE_TIMEOUT) || 30000;
-  type UC = [username: string, iat: number];
+  type UC = [username: string, exp: number];
   const uc2k = (k: UC) => `${k[0]}-${k[1]}`;
   const ucMap = new Map<string, number>();
+  setInterval((map: Map<string, number>) => {
+    const now = Date.now();
+    map.forEach((v, k) => { if (v < now) map.delete(k); });
+  }, USER_CACHE_TIMEOUT, ucMap).unref();
 
   return {
     get: (key: UC) => {
@@ -32,14 +35,14 @@ const userCache = (() => {
 })();
 
 
-function getClaims(ctx: Context) {
+function getClaims(ctx: Koa.Context) {
 
-  if (!!ctx.state.jwt) return;
+  if (ctx.state.jwt) return;
   try {
     let token = ctx.request.get("Authorization");
-    if (token)
+    if (token) {
       token = token.replace("Bearer ", "");
-    else {
+    } else {
       token = ctx.cookies.get("token");
     }
 
@@ -56,13 +59,13 @@ function getClaims(ctx: Context) {
 }
 
 
-export async function parseToken(ctx: Context, next: Next) {
+export async function parseToken(ctx: Koa.Context, next: Koa.Next) {
   getClaims(ctx);
   return next();
 }
 
 
-export async function requireAuthorization(ctx: Context, next: Next) {
+export async function requireAuthorization(ctx: Koa.Context2, next: Koa.Next) {
   getClaims(ctx);
 
   // must have a user that is not blocked or token not in rejects
@@ -86,7 +89,7 @@ export async function requireAuthorization(ctx: Context, next: Next) {
 }
 
 
-export async function afterLogin(ctx: Context, username: string) {
+export async function afterLogin(ctx: Koa.Context2, username: string) {
 
   // make sure this user is not blocked
   const [user, created] = await User.findOrCreate({ where: { username } });
@@ -118,7 +121,7 @@ export async function afterLogin(ctx: Context, username: string) {
 }
 
 
-export async function refresh(ctx: Context) {
+export async function refresh(ctx: Koa.Context) {
 
   // NOTE! requireAuthorization should have been called on this context
   const username = ctx.state.user;
@@ -127,7 +130,7 @@ export async function refresh(ctx: Context) {
 
   // replace valid token in db and cleanup expired tokens
   const user = await User.findOne({ where: { username } });
-  user.validTokens = user.validTokens.map(iat => (iat === ctx.state.jwt.iat) ? claims.iat : iat);
+  user.validTokens = user.validTokens.map(iat => ((iat === ctx.state.jwt.iat) ? claims.iat : iat));
   user.isNewRecord = false;
   await user.save();
 
@@ -151,7 +154,7 @@ export async function refresh(ctx: Context) {
 }
 
 
-export async function revoke(ctx: Context) {
+export async function revoke(ctx: Koa.Context) {
 
   // NOTE! requireAuthorization should have been called on this context
   const username = ctx.state.user;

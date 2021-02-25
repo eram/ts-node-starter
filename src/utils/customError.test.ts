@@ -1,4 +1,4 @@
-import { CustomError, errno } from ".";
+import { CustomError, errno } from "./customError";
 
 export class ExampleError extends CustomError {
   public readonly isExample = true;
@@ -67,7 +67,6 @@ describe("CustomError", () => {
       throw new SubExampleError();
     }).toThrow(ExampleError);
 
-    new SubExampleError();
     expect(SubExampleError.name).toEqual("SubExampleError");
 
     const error = new SubExampleError();
@@ -98,7 +97,6 @@ describe("CustomError", () => {
     expect(testError.toString()).toEqual("TestError: test");
     expect(testError.stack).toStrictEqual(err.stack);
   });
-
 });
 
 describe("errno", () => {
@@ -110,5 +108,4 @@ describe("errno", () => {
   test("other", () => {
     expect(errno.getStr(5555)).toEqual("5555");
   });
-
 });

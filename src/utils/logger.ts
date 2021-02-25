@@ -1,9 +1,9 @@
-//!!! DO NOT IMPORT from ".ENV"
+//! !! DO NOT IMPORT from ".ENV"
 import { format } from "util";
 import * as cluster from "cluster";
 import process from "process";
-import { IDictionary, POJO } from ".";
 import { grey, blueBright, red } from "chalk";
+import { IDictionary, POJO } from "./pojo";
 
 // TODO: consider using npm log-buffer to improve logger performance
 
@@ -18,34 +18,32 @@ function rawLogger(_ctx: string) {
 
   const addTime = (process.env.LOG_ADD_TIME && process.env.LOG_ADD_TIME !== "false");
   const ctx = (_ctx && _ctx.length) ? `[${_ctx}] ` : "";
-  const { assert, debug, trace, info, warn, error } = (!!hooked) ? hooked : console;    // eslint-disable-line
+  const { assert, debug, trace, info, warn, error } = (hooked) || console;
   const logFns = [assert, debug, trace, info, warn, error, error];
   const chalks = [red, grey, grey, blueBright, blueBright, red, red];
 
   return (level: LogLevel, ...params: unknown[]) => {
-    const prefix = chalks[level](`${(addTime ? (new Date()).toISOString() + " " : "")}${ctx}${params[0]}`);
+    const prefix = chalks[level](`${(addTime ? `${(new Date()).toISOString()} ` : "")}${ctx}${params[0]}`);
     params[0] = prefix;
     logFns[level](...params);
   };
 }
 
 function jsonLogger(_ctx: string) {
-
   const addTime = (process.env.LOG_ADD_TIME && process.env.LOG_ADD_TIME !== "false");
-  const { assert, debug, trace, info, warn, error } = (!!hooked) ? hooked : console;    // eslint-disable-line
+  const { assert, debug, trace, info, warn, error } = (hooked) || console;
   const logFns = [assert, debug, trace, info, warn, error, error];
 
   return (level: LogLevel, ...params: unknown[]) => {
-
     const out: POJO = {
-      message: format(...params),                  // the actual message that has been `console.log`
+      message: format(...params),       // the actual message that has been `console.log`
       type: level < LogLevel.error ? "out" : "err",
-      process_id: process.pid,                          // eslint-disable-line
-      app_name: process.env.APP_NAME,                   // eslint-disable-line
+      process_id: process.pid,          // eslint-disable-line
+      app_name: process.env.APP_NAME,   // eslint-disable-line
     };
 
     if (addTime) { out.timestamp = (new Date()).toISOString(); }
-    if (!!_ctx) { out.ctx = _ctx; }
+    if (_ctx) { out.ctx = _ctx; }
 
     logFns[level](out);
   };
@@ -60,7 +58,6 @@ export class Logger {
       const json = process.env.LOG_FORMAT === "json" || process.argv.includes("-json") || process.argv.includes("--json");
       this._logFn = json ? jsonLogger(module) : rawLogger(module);
     }
-
   }
 
   static getLogger(logName = "", level = LogLevel.warn, logger: ILogFn = undefined) {
@@ -141,7 +138,7 @@ export const assert = gLogger.assert.bind(gLogger);
 export function hookConsole() {
   if (!hooked) {
     hooked = {};
-    const con = globalThis.console || require('console');   // eslint-disable-line
+    const con = globalThis.console || require("console");   // eslint-disable-line
     hooked.trace = Object(con).trace;
     Object(con).trace = trace;
     hooked.debug = Object(con).debug;
@@ -164,7 +161,7 @@ export function hookConsole() {
 
 export function unhookConsole() {
   if (hooked) {
-    const con = globalThis.console || require('console');   // eslint-disable-line
+    const con = globalThis.console || require("console");   // eslint-disable-line
     Object(con).trace = hooked.trace;
     Object(con).debug = hooked.debug;
     Object(con).info = hooked.info;

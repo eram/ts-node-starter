@@ -4,9 +4,8 @@ import joiRouter from "koa-joi-router";
 import { URL } from "url";
 import { copyIn } from "../utils";
 import { afterLogin, refresh, requireAuthorization, revoke } from "../middleware/authorization";
-import { KV } from "../models/kv.model";
+import { KVStore } from "../models/kv.model";
 
-const keyfn = (n: string) => `github-${n}`;
 
 const github = {
   authService: "https://github.com/login/oauth",
@@ -15,16 +14,13 @@ const github = {
   secret: String(process.env.OAUTH_GITHUB_SECRET),
 };
 
+const kv = new KVStore({ name: "githib-state", timeout: 10 * 60 * 1000 });
 
 async function authorize(ctx: Koa.Context) {
   // redirect to github oauth service
   // create a random token that is good for 10 mins
   const rand = (Math.round(Math.random() * 1000000)).toString();
-  await KV.create({
-    key: keyfn(rand),
-    val:  ctx.get("Referrer") || ctx.href,
-    exp: new Date(Date.now() + (10 * 60 * 1000)),
-  });
+  await kv.set(rand, ctx.get("Referrer") || ctx.href);
 
   const url = new URL(`${github.authService}/authorize`);
   url.searchParams.set("client_id", github.clientId);
@@ -43,7 +39,7 @@ async function getToken(code: string) {
   url.searchParams.set("code", code);
 
   let resp = await axios.get(url.href, {
-    headers: { Accept: "application/json" },        // eslint-disable-line
+    headers: { accept: "application/json" },
   });
   const accessToken = resp.data?.access_token;
 
@@ -57,8 +53,8 @@ async function getToken(code: string) {
     JSON.stringify({ query: "{viewer{login}}" }),
     {
       headers: {
-        Accept: "application/json",                 // eslint-disable-line
-        Authorization: `bearer ${accessToken}`,     // eslint-disable-line
+        accept: "application/json",
+        authorization: `bearer ${accessToken}`,
       },
     });
 
@@ -90,22 +86,19 @@ async function getToken(code: string) {
 }
 
 
-async function login(ctx: Koa.Context, _next: Koa.Next): Promise<void> {
+async function login(ctx: Koa.Context2, _next: Koa.Next): Promise<void> {
 
   const state = String(ctx?.query?.state || "");
   let referrer = "";
 
   if (state) {
-    const kv = await KV.findOne({ where: { key: keyfn(state) } });
-    if (kv) {
-      referrer = kv.isValid ? kv.val : "";
-      void kv.destroy();
-    }
+    referrer = await kv.get(state);
   }
 
   if (!referrer) {
     // start a new process
-    return authorize(ctx);
+    await authorize(ctx);
+    return;
   }
 
   // we're back from authorize
@@ -136,8 +129,8 @@ export function init(router: joiRouter.Router, opts: Partial<typeof github> = {}
 
   router.get("/sso/github/authorize",
     {
-      pre: undefined,  // <<< auth here
-      //handler: login,
+      pre: undefined, // <<< auth here
+      // handler: login,
       meta: {
         swagger: {
           summary: "Github oauth authorize",
@@ -149,8 +142,8 @@ export function init(router: joiRouter.Router, opts: Partial<typeof github> = {}
 
   router.get("/sso/github/refresh",
     {
-      pre: requireAuthorization,  // <<< auth here
-      //validate,
+      pre: requireAuthorization, // <<< auth here
+      // validate,
       meta: {
         swagger: {
           summary: "Github token refresh",
@@ -162,8 +155,8 @@ export function init(router: joiRouter.Router, opts: Partial<typeof github> = {}
 
   router.get("/sso/github/revoke",
     {
-      pre: requireAuthorization,  // <<< auth here
-      //validate,
+      pre: requireAuthorization, // <<< auth here
+      // validate,
       meta: {
         swagger: {
           summary: "Github oauth revoke",

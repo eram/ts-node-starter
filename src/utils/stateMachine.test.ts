@@ -32,10 +32,13 @@ class Door extends StateMachine<States, Events> {
 
   // public methods
   async open() { return this.dispatch(Events.open); }
+
   async close() { return this.dispatch(Events.close); }
+
   async break() { return this.dispatch(Events.break); }
 
   isBroken(): boolean { return this.isFinal(); }
+
   isOpen(): boolean { return this.getState() === States.open; }
 
   // transition callbacks
@@ -118,6 +121,4 @@ describe("stateMachine tests", () => {
     await expect(door.break()).rejects.toEqual(undefined);
     await prms;
   });
-
 });
-

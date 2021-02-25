@@ -62,5 +62,4 @@ export class LocalMaster {
     reply(data);
     return true;
   }
-
 }

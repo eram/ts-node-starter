@@ -11,4 +11,3 @@ describe("ts-node worker", () => {
     });
   });
 });
-

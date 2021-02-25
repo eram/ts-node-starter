@@ -1,10 +1,10 @@
-import { env, errno, error, fs } from "./utils";
 import * as path from "path";
 import cluster from "cluster";
 import * as Command from "commander";
+import { env, errno, error, fs } from "./utils";
 import { clusterStart } from "./libs/cluster";
-const pkg = require('../package.json');  // eslint-disable-line
 
+const pkg = require("../package.json");
 
 // run commandline options only from main thread
 if (cluster.isWorker) {
@@ -98,7 +98,7 @@ cmd
     }
 
     try {
-      const script = require(filename);   // eslint-disable-line
+      const script = require(filename);     // eslint-disable-line
       if (!script) {
         error("error: job failed to run");
         process.exit(errno.EBADMSG);

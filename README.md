@@ -1,6 +1,6 @@
 # ts-node-starter template
 This is a Typescript starter project:
-- NodeJS v14+ environment 
+- NodeJS v14+ / ES2020 environment 
 - Typescript v4+ integrated into debugging and running. JS files are never created! [ts-node]
 - VSCode integration: debug code and tests with F5 etc.
 - Docker and Kubernetese config files:  service, deployment, job, config-maps and secrets.

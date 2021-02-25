@@ -1,4 +1,4 @@
-import { Context } from "koa";
+import Koa from "../utils/koa";
 import { User } from "../models";
 import { signToken, verifyToken } from "../utils";
 import { afterLogin, parseToken, refresh, requireAuthorization, revoke } from "./authorization";
@@ -19,13 +19,13 @@ describe("authorization middleware", () => {
 
 
   const getCtx = () => {
-    const ctx: Partial<Context> = {
+    const ctx: Partial<Koa.Context2> = {
       status: 0,
       request: {
         headers: {},
         get: ((str: string) => ctx.request.headers[str] || ""),
       } as never,
-      body: "",
+      body: {},
       href: "test",
       state: {},
       get: jest.fn((str) => { expect(str).toBeTruthy(); return undefined; }),
@@ -33,7 +33,7 @@ describe("authorization middleware", () => {
       assert: jest.fn((val: boolean, _code: number, str: string) => { if (!val) throw new Error(str); }) as never,
       cookies: { set: jest.fn((name, _val, _opts) => { expect(name).toBeTruthy(); return ctx; }) } as never,
     };
-    return ctx as Context;
+    return ctx as Koa.Context2;
   };
 
 
@@ -43,9 +43,9 @@ describe("authorization middleware", () => {
     const token = signToken({ user });
     const ctx = getCtx();
 
-    ctx.request.headers.Authorization = token;  // eslint-disable-line
+    ctx.request.headers.Authorization = token;
 
-    await parseToken(ctx, async () => { return Promise.resolve(); });
+    await parseToken(ctx, async () => Promise.resolve());
     expect(ctx.state.user).toEqual(user);
   });
 
@@ -60,11 +60,11 @@ describe("authorization middleware", () => {
     } as User);
 
     const ctx = getCtx();
-    ctx.request.headers.Authorization = token;  // eslint-disable-line
+    ctx.request.headers.Authorization = token;
 
-    await requireAuthorization(ctx, async () => { return Promise.resolve(); });
+    await requireAuthorization(ctx, async () => Promise.resolve());
     expect(ctx.state.user).toEqual(user);
-    fn.mockClear();
+    fn.mockRestore();
   });
 
 
@@ -81,19 +81,18 @@ describe("authorization middleware", () => {
     ctx.request.headers.Authorization = signToken({ user });
 
     expect(fn).toHaveBeenCalledTimes(0);
-    await requireAuthorization(ctx, async () => { return Promise.resolve(); });
+    await requireAuthorization(ctx, async () => Promise.resolve());
     expect(ctx.state.user).toEqual(user);
     expect(fn).toHaveBeenCalledTimes(1);
 
     // re-run the same ctx
     delete ctx.state.user;
     delete ctx.state.jwt;
-    await requireAuthorization(ctx, async () => { return Promise.resolve(); });
-    await requireAuthorization(ctx, async () => { return Promise.resolve(); });
+    await requireAuthorization(ctx, async () => Promise.resolve());
+    await requireAuthorization(ctx, async () => Promise.resolve());
 
     expect(fn).toHaveBeenCalledTimes(1);
-    fn.mockClear();
-
+    fn.mockRestore();
   });
 
 
@@ -101,7 +100,7 @@ describe("authorization middleware", () => {
 
     const ctx = getCtx();
     await expect(
-      requireAuthorization(ctx, async () => { return Promise.resolve(); }),
+      requireAuthorization(ctx, async () => Promise.resolve()),
     ).rejects.toThrow(/required/);
   });
 
@@ -120,12 +119,13 @@ describe("authorization middleware", () => {
     ctx.state.jwt = verifyToken(signToken({ user }));
 
     await expect(
-      requireAuthorization(ctx, async () => { return Promise.resolve(); }),
+      requireAuthorization(ctx, async () => Promise.resolve()),
     ).rejects.toThrow(/blocked/);
 
     expect(fn).toHaveBeenCalled();
-    fn.mockClear();
+    fn.mockRestore();
   });
+
 
   test("fail on token that have been revoked", async () => {
 
@@ -139,14 +139,14 @@ describe("authorization middleware", () => {
     } as User);
 
     const ctx = getCtx();
-    ctx.request.headers.Authorization = token;  // eslint-disable-line
+    ctx.request.headers.Authorization = token;
 
     await expect(
-      requireAuthorization(ctx, async () => { return Promise.resolve(); }),
+      requireAuthorization(ctx, async () => Promise.resolve()),
     ).rejects.toThrow(/revoked/);
 
     expect(ctx.state.user).toEqual(user);
-    fn.mockClear();
+    fn.mockRestore();
   });
 
 
@@ -165,8 +165,7 @@ describe("authorization middleware", () => {
     ).rejects.toThrow(/blocked/);
 
     expect(fn).toHaveBeenCalled();
-    fn.mockClear();
-
+    fn.mockRestore();
   });
 
 
@@ -177,7 +176,7 @@ describe("authorization middleware", () => {
     ctx.state.user = user;
     ctx.state.jwt = verifyToken(signToken({ user }));
 
-    const save = jest.fn(async (_opts) => { return Promise.resolve({} as User); });
+    const save = jest.fn(async (_opts) => Promise.resolve({} as User));
     const fn = jest.spyOn(User, "findOne").mockResolvedValue({
       username: user,
       blocked: false,
@@ -185,12 +184,11 @@ describe("authorization middleware", () => {
       save,
     } as unknown as User);
 
-
     await refresh(ctx);
     expect(typeof ctx.body.token).toEqual("string");
     expect(ctx.status).toEqual(200);
     expect(save).toHaveBeenCalled();
-    fn.mockClear();
+    fn.mockRestore();
   });
 
 
@@ -201,7 +199,7 @@ describe("authorization middleware", () => {
     ctx.state.user = user;
     ctx.state.jwt = verifyToken(signToken({ user }));
 
-    const save = jest.fn(async (_opts) => { return Promise.resolve({} as User); });
+    const save = jest.fn(async (_opts) => Promise.resolve({} as User));
     const fn = jest.spyOn(User, "findOne").mockResolvedValueOnce({
       username: user,
       blocked: false,
@@ -209,13 +207,10 @@ describe("authorization middleware", () => {
       save,
     } as unknown as User);
 
-
     await revoke(ctx);
-    expect(ctx.cookies.set).toHaveBeenCalled();   // eslint-disable-line
-    expect(ctx.body.ok).toBeTruthy();   // eslint-disable-line
+    expect(ctx.cookies.set).toHaveBeenCalled();
+    expect(ctx.body.ok).toBeTruthy();
     expect(save).toHaveBeenCalled();
-    fn.mockClear();
-
+    fn.mockRestore();
   });
-
 });

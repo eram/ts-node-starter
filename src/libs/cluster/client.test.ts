@@ -1,11 +1,11 @@
-process.env.BRIDGE_TESTING = "true";
 import { Bridge, PktData } from "./bridge";
 import { initClient } from "./client";
+
+process.env.BRIDGE_TESTING = "true";
 
 describe("bridge client tests", () => {
 
   test("positive: ping should answer pong", async () => {
-
     const client = initClient();
     expect(client).toBeInstanceOf(Bridge);
 
@@ -71,7 +71,7 @@ describe("bridge client tests", () => {
 
     // hack the port's send function with a dev-null function to cause a timeout
     const port = Object(client)._port; // type IPort
-    const fnDevNull = jest.fn((_pkt: unknown) => { return; });
+    const fnDevNull = jest.fn((_pkt: unknown) => { });
     port.send = fnDevNull;
 
     await Promise.all([
@@ -131,7 +131,7 @@ describe("bridge client tests", () => {
 
   test("client remove callback", () => {
     const client = initClient();
-    const cb = () => { return false; };
+    const cb = () => false;
     client.addCallback(cb);
 
     expect(client.removeCallback(cb)).toBeTruthy();
@@ -139,6 +139,3 @@ describe("bridge client tests", () => {
     expect(client.removeCallback()).toBeFalsy();
   });
 });
-
-
-

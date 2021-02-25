@@ -1,18 +1,18 @@
 /* eslint-disable sonarjs/no-duplicate-string */
 import createError from "http-errors";
 import * as Koa from "koa";
-import { User } from "../models";
-import { CustomError } from "../utils/customError";
-import { errorHandler, koaOnError, setWarnRespTime } from "./errorHandler";
 import {
   DatabaseError,
   SequelizeScopeError,
   ValidationError as SequelizeValidationError,
   ValidationErrorItem as SequelizeValidationErrorItem,
 } from "sequelize";
+import Joi from "joi";
+import { User } from "../models";
+import { CustomError } from "../utils/customError";
+import { errorHandler, koaOnError, setWarnRespTime } from "./errorHandler";
 import { apm } from "../utils/apm";
 import { sleep } from "../utils";
-import Joi from "joi";
 
 type JoiError = Joi.ValidationError;
 class CustomError2 extends CustomError { }
@@ -21,12 +21,12 @@ describe("errorHandler middleware tests", () => {
 
   test("Koa error", async () => {
 
-    const ctx: Partial<Koa.Context> = {
+    const ctx: Partial<Koa.Context2> = {
       state: {},
       status: 0,
     };
 
-    await errorHandler(ctx as Koa.Context, async () => Promise.reject(new createError.BadRequest()));
+    await errorHandler(ctx as Koa.Context2, async () => Promise.reject(new createError.BadRequest()));
     expect(ctx.status).toEqual(400);
     expect(ctx.body).toBeTruthy();
     expect(ctx.body.error).toEqual("Bad Request");
@@ -36,28 +36,28 @@ describe("errorHandler middleware tests", () => {
 
   test("CustomError error", async () => {
 
-    const ctx: Partial<Koa.Context> = {
+    const ctx: Partial<Koa.Context2> = {
       state: {},
       status: 0,
     };
 
-    await errorHandler(ctx as Koa.Context, async () => Promise.reject(new CustomError2("test")));
+    await errorHandler(ctx as Koa.Context2, async () => Promise.reject(new CustomError2("test")));
     expect(ctx.status).toEqual(500);
     expect(ctx.body).toBeTruthy();
     expect(ctx.body.error).toEqual("test");
     expect(ctx.body.errors).toBeInstanceOf(Array);
     expect(ctx.body.errors.length).toEqual(1);
-    expect(ctx.body.errors[0]).toEqual({ CustomError2: 'test' });  // eslint-disable-line
+    expect(ctx.body.errors[0]).toEqual({ CustomError2: "test" });   // eslint-disable-line
   });
 
   test("TypeError error", async () => {
 
-    const ctx: Partial<Koa.Context> = {
+    const ctx: Partial<Koa.Context2> = {
       state: {},
       status: 0,
     };
 
-    await errorHandler(ctx as Koa.Context, async () => {
+    await errorHandler(ctx as Koa.Context2, async () => {
       await User.findByPk(-1);
     });
     expect(ctx.status).toEqual(500);
@@ -69,12 +69,12 @@ describe("errorHandler middleware tests", () => {
 
   test("JoiError error", async () => {
 
-    const ctx: Partial<Koa.Context> = {
+    const ctx: Partial<Koa.Context2> = {
       state: {},
       status: 0,
     };
 
-    await errorHandler(ctx as Koa.Context, () => {
+    await errorHandler(ctx as Koa.Context2, () => {
       const err: JoiError = {
         isJoi: true,
         message: "test",
@@ -94,17 +94,17 @@ describe("errorHandler middleware tests", () => {
     expect(ctx.body.error).toEqual("test");
     expect(ctx.body.errors).toBeInstanceOf(Array);
     expect(ctx.body.errors.length).toEqual(1);
-    expect(ctx.body.errors[0]).toEqual({ "1.2": "test" });
+    expect(ctx.body.errors[0]).toEqual({ 1.2: "test" });
   });
 
   test("SequelizeValidationError error", async () => {
 
-    const ctx: Partial<Koa.Context> = {
+    const ctx: Partial<Koa.Context2> = {
       state: {},
       status: 0,
     };
 
-    await errorHandler(ctx as Koa.Context, () => {
+    await errorHandler(ctx as Koa.Context2, () => {
       throw new SequelizeValidationError("test", [
         new SequelizeValidationErrorItem("test.message", "test type", "test.path"),
       ]);
@@ -119,12 +119,12 @@ describe("errorHandler middleware tests", () => {
 
   test("SequelizeError error", async () => {
 
-    const ctx: Partial<Koa.Context> = {
+    const ctx: Partial<Koa.Context2> = {
       state: {},
       status: 0,
     };
 
-    await errorHandler(ctx as Koa.Context, () => {
+    await errorHandler(ctx as Koa.Context2, () => {
       throw new SequelizeScopeError("test");
     });
     expect(ctx.status).toEqual(500);
@@ -137,12 +137,12 @@ describe("errorHandler middleware tests", () => {
 
   test("DatabaseError error", async () => {
 
-    const ctx: Partial<Koa.Context> = {
+    const ctx: Partial<Koa.Context2> = {
       state: {},
       status: 0,
     };
 
-    await errorHandler(ctx as Koa.Context, () => {
+    await errorHandler(ctx as Koa.Context2, () => {
       throw new DatabaseError(new Error("invalid coloum for 'test'"));
     });
     expect(ctx.status).toEqual(500);
@@ -155,15 +155,14 @@ describe("errorHandler middleware tests", () => {
 
   test("exception in chain", async () => {
 
-    const ctx: Partial<Koa.Context> = {
+    const ctx: Partial<Koa.Context2> = {
       state: {},
       status: 0,
       message: "",
       href: "http://test",
     };
 
-    await errorHandler(ctx as Koa.Context, () => {
-      //await Promise.resolve(); // stop complaining
+    await errorHandler(ctx as Koa.Context2, () => {
       throw createError(503, "test");
     });
 
@@ -175,14 +174,14 @@ describe("errorHandler middleware tests", () => {
 
   test("koaOnError works", () => {
 
-    const ctx: Partial<Koa.Context> = {
+    const ctx: Partial<Koa.Context2> = {
       state: {},
       status: 0,
       message: "",
       href: "http://test",
     };
 
-    koaOnError(createError(503, "test"), ctx as Koa.Context);
+    koaOnError(createError(503, "test"), ctx as Koa.Context2);
   });
 
   test("counters are updated", async () => {
@@ -193,25 +192,25 @@ describe("errorHandler middleware tests", () => {
     const httpLatency = histograms["http.latency"].count;
 
     meters["http.requests"].reset();
-    Object(meters["http.requests"])._rate.tick();   // simulate 1 sec passed
+    Object(meters["http.requests"])._rate.tick(); // simulate 1 sec passed
     const requests = meters["http.requests"].val;
     expect(requests).toEqual(0);
 
-    const ctx: Partial<Koa.Context> = {
+    const ctx: Partial<Koa.Context2> = {
       state: {},
       status: 0,
-      body: "",
-      set: () => { return; },
+      body: {},
+      set: () => { },
       href: "test",
     };
 
-    await errorHandler(ctx as Koa.Context, async () => {
+    await errorHandler(ctx as Koa.Context2, async () => {
       expect(counters["http.inPorgress"].val).toEqual((httpInPorgress + 1));
       return Promise.resolve();
     });
 
     expect(counters["http.inPorgress"].val).toEqual(httpInPorgress);
-    Object(meters["http.requests"])._rate.tick();   // simulate 1 sec passed
+    Object(meters["http.requests"])._rate.tick(); // simulate 1 sec passed
     expect(meters["http.requests"].val).toEqual(0.02);
     expect(histograms["http.latency"].count).toEqual(httpLatency + 1);
   });
@@ -225,19 +224,15 @@ describe("errorHandler middleware tests", () => {
       expect(field === "X-Response-Time" && val.indexOf("ms") > 0).toBeTruthy();
     });
 
-    const ctx: Partial<Koa.Context> = {
+    const ctx: Partial<Koa.Context2> = {
       state: {},
       status: 0,
-      body: "",
+      body: {},
       set: setFn as never,
       href: "test",
     };
 
-    expect(ctx.body).not.toBeTruthy();
-
-    await errorHandler(ctx as Koa.Context, async () => {
-      return sleep(10);
-    });
+    await errorHandler(ctx as Koa.Context2, async () => sleep(10));
 
     expect(setFn).toHaveBeenCalledTimes(1);
     setWarnRespTime(save);

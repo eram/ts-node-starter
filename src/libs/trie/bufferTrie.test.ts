@@ -57,12 +57,11 @@ describe("BufTrie(undefined) testing", () => {
     expect(sz).not.toEqual(0);
 
     const expectedJSON = {
-      "data": [75, 11, 0, 102, 111, 111, 58, 48, 48, 48, 48, 48, 48, 59],
-      "type": "Buffer",
+      data: [75, 11, 0, 102, 111, 111, 58, 48, 48, 48, 48, 48, 48, 59],
+      type: "Buffer",
     };
 
     expect(buf.toJSON()).toEqual(expectedJSON);
-    //Equal('K foo:0000;');
   });
 
 
@@ -106,8 +105,8 @@ describe("BufTrie(undefined) testing", () => {
     const foobar = kt.has("foobar");
     expect(foobar).toBeTruthy();
 
-    const foobar_ = kt.has("foobar_");
-    expect(foobar_).toBeFalsy();
+    const foobar2 = kt.has("foobar2");
+    expect(foobar2).toBeFalsy();
 
     expect(kt.stats.hits).toEqual(3);
     expect(kt.stats.miss).toEqual(3);
@@ -168,8 +167,9 @@ describe("BufTrie(ARRAY) testing", () => {
     expect(sz).not.toEqual(0);
 
     const expectedJSON = {
-      "data": [75, 11, 0, 102, 111, 111, 58, 48, 48, 48, 48, 48, 101, 59, 75, 8, 0, 58, 48, 48, 48, 48, 48, 112, 59, 2, 0, 91, 93],
-      "type": "Buffer",
+      data: [75, 11, 0, 102, 111, 111, 58, 48, 48, 48, 48, 48, 101, 59, 75, 8, 0, 58,
+        48, 48, 48, 48, 48, 112, 59, 2, 0, 91, 93],
+      type: "Buffer",
     };
 
     expect(buf.toJSON()).toEqual(expectedJSON);
@@ -219,13 +219,14 @@ describe("BufTrie(ARRAY) testing", () => {
     const foobar = kt.has("foobar");
     expect(foobar).toBeTruthy();
 
-    const foobar_ = kt.has("foobar_");
-    expect(foobar_).toBeFalsy();
+    const foobar2 = kt.has("foobar2");
+    expect(foobar2).toBeFalsy();
 
     expect(kt.stats.hits).toEqual(3);
     expect(kt.stats.miss).toEqual(4);
   });
 });
+
 
 describe("BufTrie(number) testing", () => {
 
@@ -273,8 +274,8 @@ describe("BufTrie(number) testing", () => {
     const foobar = kt.has("foobar");
     expect(foobar).toBeTruthy();
 
-    const foobar_ = kt.has("foobar_");
-    expect(foobar_).toBeFalsy();
+    const foobar2 = kt.has("foobar2");
+    expect(foobar2).toBeFalsy();
 
     expect(kt.stats.hits).toEqual(2);
     expect(kt.stats.miss).toEqual(4);

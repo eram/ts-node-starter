@@ -1,6 +1,6 @@
+import * as path from "path";
 import { initDb } from "../../models";
 import { env, getLogger, LogLevel } from "../../utils";
-import * as path from "path";
 
 async function main() {
   env.reload();

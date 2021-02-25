@@ -1,10 +1,10 @@
 import * as Koa from "koa";
 import joiRouter from "koa-joi-router";
+import { Sequelize } from "sequelize";
+import Joi from "joi";
 import { env, IDictionary, ROJO } from "../utils";
 import { apm } from "../utils/apm";
 import { Bridge } from "../libs/cluster";
-import { Sequelize } from "sequelize";
-import Joi from "joi";
 
 const meta = {
   swagger: {
@@ -17,7 +17,7 @@ const meta = {
 type JoiV = IDictionary<Joi.SchemaLike>;
 
 const validate: JoiV = {
-  /*** RUNTMIME ERROR: see https://github.com/chuyik/koa-joi-router-docs/issues/26
+  /** * RUNTMIME ERROR: see https://github.com/chuyik/koa-joi-router-docs/issues/26
   params: {},
   query: Joi.object({ apm: Joi.boolean().description("add APM data to status output").optional() }).optional(),
   output: Joi.object({
@@ -37,7 +37,7 @@ const validate: JoiV = {
 let client: Bridge;
 let db: Sequelize;
 
-async function handler(ctx: Koa.Context, _next: Koa.Next) {
+async function handler(ctx: Koa.Context2, _next: Koa.Next) {
 
   let err: Error;
   let skipPing = false;
@@ -106,11 +106,9 @@ export function init(router: joiRouter.Router, db_: Sequelize, client_: Bridge) 
   router.route({
     method: ["GET"],
     path: "/_healthcheck",
-    pre: undefined,  // <<< auth here
+    pre: undefined, // <<< auth here
     handler,
     validate,
     meta,
   });
-
 }
-

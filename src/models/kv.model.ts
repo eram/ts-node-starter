@@ -17,15 +17,6 @@ export class KV extends Model {
     copyIn<KV>(this, kv);
     assert(!!this.key);
   }
-
-  get isValid() {
-    if (!!this.exp && this.exp.valueOf() < Date.now()) {
-      void this.destroy();
-      return false;
-    }
-    return true;
-  }
-
 }
 
 export function init(sequelize: Sequelize) {
@@ -53,4 +44,52 @@ export function init(sequelize: Sequelize) {
     freezeTableName: true,
     paranoid: false,
   });
+}
+
+
+export class KVStoreParams {
+  name: string;
+  timeout = 0;
+  keyfn = (n: string) => `${this.name}-${n}`;
+}
+
+export class KVStore extends KVStoreParams {
+
+  constructor(opts: string | Partial<KVStoreParams>) {
+    super();
+    if (typeof opts === "string") {
+      opts = { name: opts };
+    }
+    copyIn<KVStore>(this, opts);
+  }
+
+  async set(key: string, val: string, timeout?: number) {
+    assert(key.length + this.name.length + 1 < 128 && val.length < 128, "key and val length must be shorter than 128");
+    timeout = (typeof timeout === "undefined") ? this.timeout : timeout;
+    await KV.create({
+      key: this.keyfn(key),
+      val,
+      exp: timeout ? new Date(Date.now() + timeout) : 0,
+    });
+  }
+
+  async get(key: string) {
+    const kv = await KV.findOne({ where: { key: this.keyfn(key) } });
+    if (kv) {
+      if (kv.exp && kv.exp.valueOf() <= Date.now()) {
+        void kv.destroy();
+        return undefined;
+      }
+      return kv.val;
+    }
+    return undefined;
+  }
+
+  async has(key: string) {
+    return (await this.get(key)) !== undefined;
+  }
+
+  async delete(key: string) {
+    await KV.destroy({ where: { key: this.keyfn(key) } });
+  }
 }

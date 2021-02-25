@@ -12,8 +12,7 @@ export class Worker extends JsWorker {
     const opts = merge({ eval: true }, wkOpts);
     opts.workerData = opts.workerData || {};
     opts.workerData._filename_ = file;
-    super(
-      `
+    super(`
       const wk = require('worker_threads');
       require('ts-node').register();
       let file = wk.workerData._filename_;
@@ -22,4 +21,3 @@ export class Worker extends JsWorker {
       `, opts);
   }
 }
-

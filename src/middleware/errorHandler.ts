@@ -1,8 +1,8 @@
-import Koa from "koa";
 import {
   ValidationError as SequelizeValidationError,
   BaseError as SequelizeDatabaseError,
 } from "sequelize";
+import Koa from "../utils/koa";
 import { env, POJO, warn } from "../utils";
 import { Counter, Histogram, Meter, meter } from "../utils/apm";
 
@@ -20,7 +20,7 @@ export function setWarnRespTime(time: number) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function handleCatch(err: any, ctx: Koa.Context) {
+function handleCatch(err: any, ctx: Koa.Context2) {
 
   // err is of type createError.HttpError if thrown in http context
   ctx.status = (!!ctx.status && ctx.status !== 404) ? ctx.status : (err.statusCode || err.status || 500);
@@ -54,6 +54,7 @@ function handleCatch(err: any, ctx: Koa.Context) {
       const msg = err.message || err;
       ctx.state.errors.push({ [err.name || "message"]: msg });
     }
+
   } else {
     // HttpError
     // CustomError
@@ -69,7 +70,7 @@ function handleCatch(err: any, ctx: Koa.Context) {
   }
 }
 
-export async function errorHandler(ctx: Koa.Context, next: () => Promise<void>) {
+export async function errorHandler(ctx: Koa.Context2, next: Koa.Next) {
 
   ctx.state.errors = new Array<Record<string, string>>();
 
@@ -79,16 +80,13 @@ export async function errorHandler(ctx: Koa.Context, next: () => Promise<void>) 
 
   try {
     await next();
-
   } catch (err) {
-
     handleCatch(err, ctx);
   }
 
   ctx.status = ctx.status || 200;
 
   if (ctx.status >= 400) {
-
     if (ctx.status >= 500) {
       httpErrors.add();
       warn("Koa error handler", POJO.stringify(ctx.state.errors));

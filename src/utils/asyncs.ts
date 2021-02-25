@@ -19,19 +19,14 @@ export const fs = {
   write: promisify(_fs.write),
   read: promisify(_fs.read),
   close: promisify(_fs.close),
-
-  //setTimeout: promisify(setTimeout),
-  //setInterval: promisify(setInterval),
-  //setImmediate: promisify(setImmediate),
 };
 
-export const sleep = async (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
+export const sleep = async (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-export class ArrayAsync<T> extends Array<T> {
-
+export class AsyncArray<T> extends Array<T> {
   async asyncForEach(callback: (item: T, index: number) => Promise<void>) {
     for (let index = 0; index < this.length; index++) {
-      await callback(this[index], index);
+      await callback(this[index], index);     // eslint-disable-line
     }
   }
 
@@ -39,4 +34,3 @@ export class ArrayAsync<T> extends Array<T> {
     await Promise.all(this.map(callback));
   }
 }
-

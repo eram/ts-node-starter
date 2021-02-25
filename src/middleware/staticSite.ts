@@ -17,7 +17,7 @@ export function init(folder: string, mountPoint: string) {
   const srv = serve(fn, { defer: false, gzip: true });
   const mnt = mount(mountPoint, srv);
 
-  return async function (ctx: Koa.Context, next: () => Promise<void>){
+  return async (ctx: Koa.Context, next: () => Promise<void>) => {
     await mnt(ctx, next);
   };
 }

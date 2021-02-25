@@ -1,14 +1,13 @@
-import { Options, WhereOptions } from "sequelize";
-import { sleep } from "../utils";
+import { Options } from "sequelize";
 import { initDb } from "./db";
-import { KV } from "./kv.model";
+import { KVStore } from "./kv.model";
 
-describe("kv", () => {
+describe("KVStore", () => {
 
   beforeAll(async () => {
     const opts: Options = {
-      dialect: "sqlite",
       storage: ":memory:",
+      dialect: "sqlite",
     };
 
     const db = initDb(opts);
@@ -16,35 +15,42 @@ describe("kv", () => {
   });
 
   test("save and retrieve kv entry", async () => {
-    const user = new KV({ key: "key1", val: "val1" });
-    await user.save();
-
-    const where: WhereOptions = { where: { key: "key1" } };
-    const found = await KV.findOne(where);
-    expect(found).toBeTruthy();
-    expect(Object(found).id).toBeUndefined();
-    expect(found.key).toEqual("key1");
-    expect(found.val).toEqual("val1");
-    expect(!!found.exp).toBeFalsy();
-    expect(found.isValid).toBeTruthy();
-    expect(found.createdAt).toBeTruthy();
+    const name = expect.getState().currentTestName;
+    const kv = new KVStore(name);
+    await kv.set("key1", "val1", 10000);
+    await expect(
+      kv.get("key1"),
+    ).resolves.toEqual("val1");
   });
 
-
-  test("expired key is invalid and automatically deleted", async () => {
-    const user = new KV({ key: "key2", val: "val2", exp: new Date(0) });
-    await user.save();
-
-    const where: WhereOptions = { where: { key: "key2" } };
-    const found = await KV.findOne(where);
-    expect(found).toBeTruthy();
-    expect(found.isValid).toBeFalsy();
-
-    await sleep(10);
-
-    const found2 = await KV.findOne(where);
-    expect(found2).toBeFalsy();
+  test("expired key is not returned", async () => {
+    const name = expect.getState().currentTestName;
+    const kv = new KVStore(name);
+    await kv.set("key2", "val2", -1);
+    await expect(
+      kv.has("key2"),
+    ).resolves.toBeFalsy();
   });
 
+  test("deleted key is not returned", async () => {
+    const name = expect.getState().currentTestName;
+    const kv = new KVStore(name);
+    await kv.set("key3", "val3", 10000);
+    await expect(
+      kv.has("key3"),
+    ).resolves.toBeTruthy();
+    await kv.delete("key3");
+    await expect(
+      kv.has("key3"),
+    ).resolves.toBeFalsy();
+  });
 
+  test("long key should assert", async () => {
+    const name = expect.getState().currentTestName;
+    const kv = new KVStore(name);
+    const longkey = "".padEnd(130, "0");
+    await expect(
+      kv.set(longkey, "val4"),
+    ).rejects.toThrow(/128/);
+  });
 });

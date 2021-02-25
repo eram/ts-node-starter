@@ -1,5 +1,4 @@
 /* eslint-disable sonarjs/no-duplicate-string */
-// eslint-disable-next-line filenames/match-regex
 import { Trie } from "./trie";
 
 describe("QuickTrie tests", () => {

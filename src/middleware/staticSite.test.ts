@@ -1,11 +1,10 @@
-import * as Koa from "koa";
-import { init } from "./staticSite";
 import { ReadStream } from "fs";
+import Koa from "../utils/koa";
+import { init } from "./staticSite";
 
 describe("static-site middleware", () => {
 
   test("middleware is created", () => {
-
     const fn = init("./public", "/");
     expect(typeof fn).toEqual("function");
   });
@@ -21,10 +20,10 @@ describe("static-site middleware", () => {
     const fn = init("./public", "/");
     expect(typeof fn).toEqual("function");
 
-    const ctx: Partial<Koa.Context> = {
+    const ctx: Partial<Koa.Context2> = {
       method: "GET",
       path: "favicon.png",
-      set: () => { return; },
+      set: () => { },
       // @ts-expect-error
       acceptsEncodings: () => ["deflate", "gzip"],
     };
@@ -33,7 +32,7 @@ describe("static-site middleware", () => {
       get: () => "",
     };
 
-    await fn(ctx as Koa.Context, async () => Promise.resolve());
+    await fn(ctx as Koa.Context2, async () => Promise.resolve());
 
     expect(ctx.body).toBeInstanceOf(ReadStream);
     expect(ctx.body.readable).toBeTruthy();

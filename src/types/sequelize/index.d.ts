@@ -2,7 +2,8 @@
 
 // this is a fix to sequalize typings
 import { FindOptions as FO, TableHints, Model } from "sequalize";
-declare module "sequelize" {
+
+declare namespace sequelize {
   export interface FindOptions extends FO {
     tableHints?: TableHints;
   }
@@ -14,3 +15,5 @@ declare module "sequelize" {
     associate?: () => void;
   }
 }
+
+

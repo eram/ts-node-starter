@@ -4,7 +4,7 @@
 import cluster from "cluster";
 import * as fs from "fs";
 import path from "path";
-import { apm, assert, count, Counter, env, errno, error, getLogger, Histogram, LogLevel, Meter, POJO } from "../../utils";
+import { apm, assert, AsyncArray, count, Counter, env, errno, error, getLogger, Histogram, LogLevel, Meter, POJO } from "../../utils";
 import { Bridge, BridgeError, Packet, PktData, PKT_TOPIC } from "./bridge";
 import { initMaster } from "./master";
 import { WorkerConf, WorkerInfo, WorkerState } from "./workerConf";
@@ -44,13 +44,13 @@ function clusterDispatch(pkt: Readonly<Packet>) {
 
       case "bcast":
         // send to all connected clients, except the sender
-        for (const i in cluster.workers) {
-          const worker = cluster.workers[i];
+        Object.keys(cluster.workers).forEach(k => {
+          const worker = cluster.workers[k];
           if (pkt._source !== worker.id) {
             const pkt2 = new Packet(pkt._source, worker.id, pkt._data);
             clusterDispatch(pkt2);
           }
-        }
+        });
         // reply to caller
         if (pkt._shouldReply) {
           const pkt2 = new Packet("master", pkt._source, pkt._data, pkt._shouldReply, pkt._pktId);
@@ -60,8 +60,8 @@ function clusterDispatch(pkt: Readonly<Packet>) {
 
       default:
         // send to another process
-        for (const i in cluster.workers) {
-          const worker = cluster.workers[i];
+        Object.keys(cluster.workers).forEach(k => {
+          const worker = cluster.workers[k];
           if (pkt._dest === worker.id) {
             worker.send(pkt, undefined, (err: BridgeError) => {
               if (err) {
@@ -69,7 +69,7 @@ function clusterDispatch(pkt: Readonly<Packet>) {
               }
             });
           }
-        }
+        });
     } // switch
   } catch (err) {
     logger.error("clusterDispatch", err.stack || err);
@@ -81,7 +81,6 @@ function getInfo(worker: cluster.Worker) {
   return Object(worker).__info__ as WorkerInfo;
 }
 
-
 function clusterApmHandler(data: PktData, reply: (data: PktData) => void) {
   if (data.msg !== "apm") return false;
 
@@ -89,12 +88,12 @@ function clusterApmHandler(data: PktData, reply: (data: PktData) => void) {
   let apmErrors = 0;
   apm.reset(true);
 
-  for (const k in cluster.workers) {
+  Object.keys(cluster.workers).forEach(k => {
     const inf = getInfo(cluster.workers[k]);
     count(`cluster.workers.${WorkerState[inf.state]}`);
-    if (!inf || inf.state !== WorkerState.pinging) continue;
+    if (!inf || inf.state !== WorkerState.pinging) return;
     waitFor.push(bridge.send("apm", cluster.workers[k].id));
-  }
+  });
 
   Promise.allSettled(waitFor).then(values => {
     values.forEach(value => {
@@ -106,8 +105,8 @@ function clusterApmHandler(data: PktData, reply: (data: PktData) => void) {
           apmErrors++;
         } else {
           const pktApm = pkt.apm;
-          Object.keys(pktApm).forEach(type => {
-            Object.keys(pktApm[type]).forEach(key => {
+          Object.keys(pktApm).forEach((type) => {
+            Object.keys(pktApm[type]).forEach((key) => {
               switch (type) {
                 case "counters":
                   Counter.instance(key, pktApm[type][key]);
@@ -156,18 +155,18 @@ function clusterStop(signal: NodeJS.Signals) {
   interval = undefined;
 
   // prevent EPIPE errors when process goes down
-  process.stdout.on("error", function (err) {
-    if (err.code == "EPIPE") {
+  process.stdout.on("error", err => {
+    if (err.code === "EPIPE") {
       process.exit(0);
     }
   });
 
-  for (const i in cluster.workers) {
-    const worker = cluster.workers[i];
+  Object.keys(cluster.workers).forEach(k => {
+    const worker = cluster.workers[k];
     const inf = getInfo(worker);
     const app = apps[inf.idx];
 
-    if (app.shutdown_with_message && info.state == WorkerState.pinging) {
+    if (app.shutdown_with_message && info.state === WorkerState.pinging) {
       info(`wroker ${worker.id}: ${signal}`);
       const msg: PktData = { msg: "signal", value: signal };
       bridge.post(msg, worker.id);
@@ -177,7 +176,7 @@ function clusterStop(signal: NodeJS.Signals) {
       // we want to see the cluster on "exit" so we can cleanup
       cluster.emit("exit", worker, 0, signal);
     }
-  }
+  });
 
   // live workers have been signaled >> cluster would exit from cluster.on("exit")
   setImmediate(() => {
@@ -190,9 +189,9 @@ function clusterStop(signal: NodeJS.Signals) {
   // failsafe timeout
   setTimeout(() => {
     info("clusterDestory timeout");
-    for (const i in cluster.workers) {
-      cluster.workers[i].process.kill();
-    }
+    Object.keys(cluster.workers).forEach(k => {
+      cluster.workers[k].process.kill();
+    });
     process.exit(0);
   }, WorkerConf.KILL_TIMEOUT / 2).unref();
 }
@@ -210,10 +209,11 @@ async function workerCheck(worker: cluster.Worker) {
 
     // check health
     if (!!app.max_memory_restart && Number(pkt.mem) > app.max_memory_restart && inf.lastMem > app.max_memory_restart) {
-      info(`worker ${worker.id} memory over max: ${pkt.mem} MB`);
+      info(`worker ${worker.id} memory twice over max: ${pkt.mem} MB`);
       return false;
-    } else if (Number(pkt.cpu >= 99 && inf.lastCpu >= 99)) {
-      info(`worker ${worker.id} CPU over max: ${pkt.cpu}%`);
+    }
+    if (Number(pkt.cpu >= 99 && inf.lastCpu >= 99)) {
+      info(`worker ${worker.id} CPU twice over max: ${pkt.cpu}%`);
       return false;
     }
 
@@ -233,10 +233,11 @@ async function clusterMaint() {
 
   const toKill: cluster.Worker[] = [];
 
-  for (const k in cluster.workers) {
+  const arr = new AsyncArray(...Object.keys(cluster.workers));
+  await arr.asyncForEach(async (k) => {
     const worker = cluster.workers[k];
     const inf = getInfo(worker);
-    if (!inf) continue;
+    if (!inf) return;
     const app = apps[inf.idx];
 
     const tDiff = Date.now() - inf.lastUpdate;
@@ -261,8 +262,7 @@ async function clusterMaint() {
           warn(`worker ${worker.id} healthcheck timeout`);
           toKill.push(worker);
         }
-
-        { } // fall through
+        /* fall through */
 
       case WorkerState.listening:
         // try to ping worker
@@ -280,7 +280,7 @@ async function clusterMaint() {
         }
         break;
     }
-  }
+  });
 
   // dont kill workers while debugging...
   if (!env.isDebugging) {
@@ -304,7 +304,7 @@ function clusterFork(app: WorkerConf, idx: number, restarts = 0) {
   process.env.LOG_ADD_TIME = String(app.time);
 
   const save2 = process.env.APP_NAME;
-  process.env.APP_NAME = process.env.APP_NAME + ":" + app.name;
+  process.env.APP_NAME = `${process.env.APP_NAME}:${app.name}`;
 
   const save3 = process.cwd();
   process.chdir(app.cwd);
@@ -313,7 +313,7 @@ function clusterFork(app: WorkerConf, idx: number, restarts = 0) {
     execArgv: ["-r", "ts-node/register"], // required to fork typescript
     args: app.args.split(" "),
     exec: app.script,
-    silent: false,      // pipe stdout/stderr
+    silent: false,                        // pipe stdout/stderr
   });
   const worker = cluster.fork();
   Object(worker).__info__ = new WorkerInfo(idx, restarts);
@@ -410,7 +410,7 @@ export async function clusterStart(arr: POJO[]) {
     if ((!!code || !!signal) && app.autorestart && !clusterStopping) {
       if (inf.restarts < app.max_restarts) {
         restarting = true;
-        const timeout = app.restart_delay + app.exp_backoff_restart_delay * Math.pow(inf.restarts, 2);
+        const timeout = app.restart_delay + app.exp_backoff_restart_delay * (inf.restarts ** 2);
         info(`reastrting ${worker.id} in ${timeout} ms`);
         setTimeout(() => { clusterFork(apps[inf.idx], inf.idx, inf.restarts + 1); }, timeout);
       } else {
@@ -463,5 +463,3 @@ export async function clusterStart(arr: POJO[]) {
   interval = setInterval(() => { void clusterMaint(); }, WorkerConf.KILL_TIMEOUT / 2).unref();
   return 0;
 }
-
-
