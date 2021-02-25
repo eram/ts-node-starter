@@ -4,9 +4,8 @@ import joiRouter from "koa-joi-router";
 import { URL } from "url";
 import { copyIn } from "../utils";
 import { afterLogin, refresh, requireAuthorization, revoke } from "../middleware/authorization";
-import { KV } from "../models/kv.model";
+import { KVStore } from "../models/kv.model";
 
-const keyfn = (n: string) => `github-${n}`;
 
 const github = {
   authService: "https://github.com/login/oauth",
@@ -15,16 +14,13 @@ const github = {
   secret: String(process.env.OAUTH_GITHUB_SECRET),
 };
 
+const kv = new KVStore({ name: "githib-state", timeout: 10 * 60 * 1000 });
 
 async function authorize(ctx: Koa.Context) {
   // redirect to github oauth service
   // create a random token that is good for 10 mins
   const rand = (Math.round(Math.random() * 1000000)).toString();
-  await KV.create({
-    key: keyfn(rand),
-    val: ctx.get("Referrer") || ctx.href,
-    exp: new Date(Date.now() + (10 * 60 * 1000)),
-  });
+  await kv.set(rand, ctx.get("Referrer") || ctx.href);
 
   const url = new URL(`${github.authService}/authorize`);
   url.searchParams.set("client_id", github.clientId);
@@ -96,11 +92,7 @@ async function login(ctx: Koa.Context2, _next: Koa.Next): Promise<void> {
   let referrer = "";
 
   if (state) {
-    const kv = await KV.findOne({ where: { key: keyfn(state) } });
-    if (kv) {
-      referrer = kv.isValid ? kv.val : "";
-      void kv.destroy();
-    }
+    referrer = await kv.get(state);
   }
 
   if (!referrer) {

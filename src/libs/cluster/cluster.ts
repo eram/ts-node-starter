@@ -209,11 +209,11 @@ async function workerCheck(worker: cluster.Worker) {
 
     // check health
     if (!!app.max_memory_restart && Number(pkt.mem) > app.max_memory_restart && inf.lastMem > app.max_memory_restart) {
-      info(`worker ${worker.id} memory over max: ${pkt.mem} MB`);
+      info(`worker ${worker.id} memory twice over max: ${pkt.mem} MB`);
       return false;
     }
     if (Number(pkt.cpu >= 99 && inf.lastCpu >= 99)) {
-      info(`worker ${worker.id} CPU over max: ${pkt.cpu}%`);
+      info(`worker ${worker.id} CPU twice over max: ${pkt.cpu}%`);
       return false;
     }
 
