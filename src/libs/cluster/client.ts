@@ -1,9 +1,12 @@
+import * as path from "path";
 import cluster from "cluster";
 import * as os from "os";
 import { initMaster } from "./master";
 import { apm, assert, error, getLogger, info, ROJO } from "../../utils";
 import { LocalMaster } from "./localMaster";
 import { Bridge, Packet, PktData } from "./bridge";
+import { InitPluginFn } from "./plugin";
+import { initDb } from "../../models";
 
 
 function isWorker() {
@@ -63,6 +66,21 @@ export function initClient(): Bridge {
           data.cpu = Math.ceil(100 * os.loadavg()[0]); // last minute avg CPU for this core.
           const mem = process.memoryUsage();
           data.mem = Math.ceil((mem.rss + mem.heapUsed + mem.external) / 1024 / 1024); // in MB
+        }
+        break;
+
+      case "plugin":
+        {
+          const value = String(data.value);
+          delete data.value;
+          try {
+            const filename = path.resolve(value);
+            const mod = require(filename) as { initPlugin: InitPluginFn };  // eslint-disable-line
+            void mod.initPlugin({ db: initDb(), bridge: client });
+          } catch (err) {
+            error(err);
+            data.error = err.message || err;
+          }
         }
         break;
 

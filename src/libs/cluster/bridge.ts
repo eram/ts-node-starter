@@ -1,7 +1,7 @@
 import { CustomError, env, POJO, Logger } from "../../utils";
 
 type Dest = number | "bcast" | "master";                                    // destination worker.id
-type Msg = "apm" | "healthcheck" | "ping" | "pong" | "require" | "signal";  // see master.ts for details
+type Msg = "apm" | "healthcheck" | "ping" | "pong" | "plugin" | "signal";  // see master.ts for details
 export const PKT_TOPIC = "cluster-bridge";
 
 // user data

@@ -34,11 +34,11 @@ spec:
             - containerPort: 8104
           resources:
             limits:
-              memory: "2048Mi"
-              cpu: "250m"
+              memory: 1Gi
+              cpu: "3"
             requests:
-              memory: "512Mi"
-              cpu: "50m"
+              memory: 1Gi
+              cpu: "3"
           env:
             - name: POD_NAME
               valueFrom:
@@ -55,8 +55,19 @@ spec:
                     name: ts-node-starter-config
           readinessProbe:
             httpGet:
-              path: /
+              path: /_healthcheck
               port: 8104
-            initialDelaySeconds: 10
+              scheme: HTTP
+            initialDelaySeconds: 5
             periodSeconds: 10
             successThreshold: 2
+            timeoutSeconds: 1
+          livenessProbe:
+            httpGet:
+              path: /_healthcheck
+              port: 8104
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+            timeoutSeconds: 3
