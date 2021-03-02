@@ -1,5 +1,4 @@
 import { initMaster } from "./master";
-import { Bridge } from "./bridge";
 import { LocalMaster } from "./localMaster";
 
 describe("bridge master", () => {
@@ -32,16 +31,6 @@ describe("bridge master", () => {
     expect(cb).toHaveBeenCalledTimes(1);
   });
 
-  test("require msg to master", async () => {
-
-    const mock = new LocalMaster();
-    initMaster(mock.master);
-    const resp = await mock.client.send({ msg: "require", value: __filename }, "master", 0);
-    expect(typeof resp).toEqual("object");
-    expect(resp.error).toBeFalsy();
-    expect(Object(mock.master).initMuduleCalled).toBeTruthy();
-  });
-
   test("unknown msg to master", async () => {
 
     const mock = new LocalMaster();
@@ -53,8 +42,3 @@ describe("bridge master", () => {
   });
 });
 
-// function is used by the 'require' test above
-export function initModule(brg: Bridge) {
-  expect(brg).toBeInstanceOf(Bridge);
-  Object(brg).initMuduleCalled = true;
-}

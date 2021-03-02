@@ -7,15 +7,15 @@ import { Bridge, BridgeError, Packet, PktData } from "./bridge";
 
 export class LocalMaster {
 
-  bus: EventEmitter;
+  private _bus: EventEmitter;
   master: Bridge;
   client: Bridge;
 
   constructor() {
 
     const logger = getLogger("LocalMaster");
-    this.bus = new EventEmitter();
-    this.bus.on("error", logger.error.bind(logger));
+    this._bus = new EventEmitter();
+    this._bus.on("error", logger.error.bind(logger));
 
     this.master = new Bridge({
       id: "master",
@@ -32,9 +32,9 @@ export class LocalMaster {
         if (packet._dest === "bcast") {
           packet = new Packet(packet._source, 0, packet._data, packet._shouldReply, packet._pktId);
         }
-        setImmediate((pkt) => this.bus.emit("clnt", pkt), packet);
+        setImmediate((pkt) => this._bus.emit("clnt", pkt), packet);
       },
-      onPkt: (cb: (packet: Packet) => void) => this.bus.on("master", cb),
+      onPkt: (cb: (packet: Packet) => void) => this._bus.on("master", cb),
     }, logger);
 
     // initialize a client on the same EventEmitter
@@ -49,9 +49,9 @@ export class LocalMaster {
         if (packet._dest === 0) {
           throw new BridgeError("packet dest cannot be this client");
         }
-        setImmediate((pkt) => this.bus.emit("master", pkt), packet);
+        setImmediate((pkt) => this._bus.emit("master", pkt), packet);
       },
-      onPkt: (cb: (packet: Packet) => void) => this.bus.on("clnt", cb),
+      onPkt: (cb: (packet: Packet) => void) => this._bus.on("clnt", cb),
     }, getLogger());
   }
 

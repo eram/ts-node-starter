@@ -1,5 +1,8 @@
+import * as path from "path";
 import { Bridge, PktData } from "./bridge";
 import { info, error } from "../../utils";
+import { initDb } from "../../models";
+import { InitPluginFn } from "./plugin";
 
 function defaultMasterHandler(data: PktData, reply: (data: PktData) => void) {
 
@@ -10,12 +13,14 @@ function defaultMasterHandler(data: PktData, reply: (data: PktData) => void) {
       data.msg = "pong";
       break;
 
-    case "require":
+    case "plugin":
       {
         const value = String(data.value);
         delete data.value;
         try {
-          require(value).initModule(this);  // eslint-disable-line
+          const filename = path.resolve(value);
+          const mod = require(filename) as { initPlugin: InitPluginFn };  // eslint-disable-line
+          void mod.initPlugin({ db: initDb(), bridge: this });
         } catch (err) {
           error(err);
           data.error = err.message || err;

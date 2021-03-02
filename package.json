@@ -2,12 +2,13 @@
   "name": "ts-node-starter",
   "version": "2.0.0",
   "description": "ts-node starter project",
-  "main": "index.js",
+  "main": "src/index.js",
   "private": "false",
   "repository": {
     "type": "git",
     "url": "https://github.com/eram/ts-node-starter.git"
   },
+  "engine" : { "node" : ">=14" },
   "author": "eram",
   "license": "ISC",
   "scripts": {
