@@ -1,5 +1,5 @@
 import * as path from "path";
-import { env, getLogger, LogLevel, sleep } from "../../utils";
+import { env, getLogger, LogLevel, sleep, errno, critical } from "../../utils";
 
 async function main() {
   const jobName = path.basename(__dirname);
@@ -16,6 +16,10 @@ async function main() {
 }
 
 // node entry point (TS)
+process.stdin.setEncoding("utf8");
+process.stdout.setEncoding("utf8");
+process.on("uncaughtException", (err) => { critical(err); process.exit(errno.EEXIST); });
+process.on("unhandledRejection", (err) => { critical(err); process.exit(errno.EEXIST); });
 main().then((rc: number) => {
   if (rc) {
     process.emit("exit", rc);

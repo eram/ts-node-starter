@@ -6,10 +6,7 @@ import koaLogger from "koa-logger";
 import createRouter from "koa-joi-router";
 import { userAgent } from "koa-useragent";
 import { Sequelize } from "sequelize";
-
-import {
-  env, getLogger, info, LogLevel,
-} from "../../utils";
+import { env, getLogger, info, LogLevel } from "../../utils";
 import { errorHandler, koaOnError, setWarnRespTime } from "../../middleware/errorHandler";
 import { init as staticSite } from "../../middleware/staticSite";
 import { parseToken, requireAuthorization } from "../../middleware/authorization";

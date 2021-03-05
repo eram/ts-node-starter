@@ -1,14 +1,16 @@
 {
   "name": "ts-node-starter",
   "version": "2.0.0",
-  "description": "ts-node starter project",
+  "description": "Node Typescript service starter",
   "main": "src/index.js",
   "private": "false",
   "repository": {
     "type": "git",
     "url": "https://github.com/eram/ts-node-starter.git"
   },
-  "engine" : { "node" : ">=14" },
+  "engine": {
+    "node": ">=14"
+  },
   "author": "eram",
   "license": "ISC",
   "scripts": {
@@ -61,7 +63,7 @@
     "koa-useragent": "^4.0.0",
     "node-pre-gyp": "^0.17.0",
     "sequelize": "^6.3.5",
-    "sqlite3": "^4.2.0",
+    "sqlite3": "^5.0.2",
     "trie-mapping": "^3.0.3",
     "ts-node": "^8.10.2",
     "typescript": "^4.1.3"

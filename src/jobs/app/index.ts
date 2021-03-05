@@ -3,7 +3,7 @@ import { worker } from "cluster";
 import { initClient } from "../../libs/cluster";
 import { initDb, checkDbAlive } from "../../models";
 import { setupKoa } from "./setupKoa";
-import { env, errno, info } from "../../utils";
+import { critical, env, errno, info } from "../../utils";
 import { apm } from "../../utils/apm";
 
 
@@ -33,6 +33,10 @@ export async function main() {
 }
 
 // node entry point (TS)
+process.stdin.setEncoding("utf8");
+process.stdout.setEncoding("utf8");
+process.on("uncaughtException", (err) => { critical(err); process.exit(errno.EEXIST); });
+process.on("unhandledRejection", (err) => { critical(err); process.exit(errno.EEXIST); });
 main().then((rc: number) => {
   if (rc) {
     process.emit("exit", rc);

@@ -1,7 +1,7 @@
 import * as path from "path";
 import cluster from "cluster";
 import * as Command from "commander";
-import { env, errno, error, fs } from "./utils";
+import { env, errno, error, afs } from "./utils";
 import { clusterStart } from "./libs/cluster";
 
 const pkg = require("../package.json");
@@ -20,7 +20,7 @@ async function reloadEnv() {
     if (!param.startsWith(".")) param = `.env.${param}`;
     const filename = path.resolve(param);
 
-    if (!await fs.exists(filename)) {
+    if (!await afs.exists(filename)) {
       error("error: 'path' must be .env file");
       process.exit(errno.EINVAL);
     }
@@ -62,7 +62,7 @@ cmd
      */
 
     const filename = path.resolve(param);
-    if (!await fs.exists(filename)) {
+    if (!await afs.exists(filename)) {
       error("File not found");
       process.exit(errno.ENOENT);
     }
@@ -92,7 +92,7 @@ cmd
 
     await reloadEnv();
     const filename = path.resolve(param, "index.ts");
-    if (!await fs.exists(filename)) {
+    if (!await afs.exists(filename)) {
       error("error: 'path' must be folder with index.ts file'");
       process.exit(errno.ENOENT);
     }

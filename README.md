@@ -1,4 +1,4 @@
-# ts-node-starter template
+# ts-node-starter
 This is a Typescript starter project:
 - NodeJS v14+ / ES2020 environment 
 - Typescript v4+ integrated into debugging and running. JS files are never created! [ts-node]
@@ -34,8 +34,8 @@ This is a Typescript starter project:
 1. install nodejs and git
 1. ```> git clone ...```
 1. ```> npm install```
-1. ```> node run createDb```
-1. ```> npm start:dev```
+1. ```> npm run createDb```
+1. ```> npm run start:dev```
 
 ## config files
 config files under root folder:
