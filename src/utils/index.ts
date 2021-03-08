@@ -7,3 +7,4 @@ export * from "./worker";
 export * from "./jwt";
 export * from "./apm";
 export * from "./copyIn";
+export * from "./shell";

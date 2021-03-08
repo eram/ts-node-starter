@@ -52,16 +52,16 @@ describe("logger tests", () => {
     expect(nullFn).toHaveBeenCalledTimes(3);
   });
 
-  it("check assertion throws in debug", () => {
+  it("check assertion fails throws", () => {
     const nullFn = (_level: logger.LogLevel, _txt: string) => { };
     const save = process.env.JEST_WORKER_ID;
     delete process.env.LOG_ADD_TIME;
     logger.assert(!!save);
 
-    const log = logger.getLogger("test5", logger.LogLevel.warn, nullFn);
+    const log: logger.Logger = logger.getLogger("test5", logger.LogLevel.warn, nullFn);
     expect(() => {
-      log.assert(false);
-    }).toThrow();
+      log.assert.fail("test");
+    }).toThrow(/test/);
 
     delete process.env.JEST_WORKER_ID;
     const log2 = logger.getLogger("test6", logger.LogLevel.warn, nullFn);

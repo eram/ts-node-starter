@@ -21,12 +21,12 @@ module.exports = {
       kill_timeout: 2000,
       wait_ready: true,
       time: false,
-      //pid_file: "./logs/pid",
-      //out_file: "./logs/app.log",
-      //error_file: "./logs/app.log",
-      //combine_logs: false,
+      // pid_file: "./logs/pid",
+      // out_file: "./logs/app.log",
+      // error_file: "./logs/app.log",
+      // combine_logs: false,
 
-      /*** unsupported params ***/
+      /** * unsupported params ** */
       // exec_mode: "cluster",
       // min_uptime: 1000,
       // cron_restart: "1 0 * * *"

@@ -7,9 +7,9 @@ export { Sequelize, Options } from "sequelize";
 
 let sequelize: Sequelize;
 
-export function initDb(opts: Options = {}) {
+export function initDb(opts?: Options) {
 
-  if (!sequelize) {
+  if (!sequelize || opts) {
     const { DB_NAME, DB_USER, DB_PWD, DB_DIALECT, DB_HOST, DB_PORT, DB_STORAGE = "", DB_VERBOSE = "false" } = process.env;
 
     const o = copyIn<Options>({
@@ -27,7 +27,7 @@ export function initDb(opts: Options = {}) {
       pool: {
         min: 2,
       },
-    }, opts);
+    }, opts || {});
 
     assert(!!o.dialect, "Missing Sequelize config");
 

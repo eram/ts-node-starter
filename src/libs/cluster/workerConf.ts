@@ -4,7 +4,8 @@ import { assert } from "../../utils";
 
 export class WorkerConf {
 
-  static readonly KILL_TIMEOUT = Number(process.env.KILL_TIMEOUT) || 10_000;
+  static readonly WD_TIMEOUT_RESTART = Number(process.env.WD_TIMEOUT_RESTART) || 10_001;
+  static readonly WD_CHECK_INTERVAL = Number(process.env.WD_CHECK_INTERVAL) || 5_000;
 
   /*
    * params from pm2 ecosystem file: pm2.config.js
@@ -71,7 +72,7 @@ export class WorkerConf {
     this.listen_timeout = Number(obj.listen_timeout) || 0;
     this.restart_delay = Number(obj.restart_delay) || 1000;
     this.exp_backoff_restart_delay = Number(obj.exp_backoff_restart_delay) || 1000;
-    this.kill_timeout = Math.max(Number(obj.kill_timeout), WorkerConf.KILL_TIMEOUT);
+    this.kill_timeout = Math.max(Number(obj.kill_timeout), WorkerConf.WD_TIMEOUT_RESTART);
     this.max_memory_restart = WorkerConf.toMB(String(obj.max_memory_restart || "00").toUpperCase());
     this.shutdown_with_message = Boolean(obj.shutdown_with_message);
     this.time = Boolean(obj.time);

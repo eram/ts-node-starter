@@ -1,15 +1,19 @@
 import * as path from "path";
 import cluster from "cluster";
 import * as Command from "commander";
-import { env, errno, error, afs } from "./utils";
+import { env, errno, error, afs, critical, assert, CustomError } from "./utils";
 import { clusterStart } from "./libs/cluster";
+import { initDb, User } from "./models";
 
 const pkg = require("../package.json");
 
 // run commandline options only from main thread
-if (cluster.isWorker) {
-  process.exit(0);
-}
+assert(!cluster.isWorker, "command cannot run from a worker process");
+
+process.stdin.setEncoding("utf8");
+process.stdout.setEncoding("utf8");
+process.on("uncaughtException", (err: CustomError) => { critical("uncaughtException", err); process.exit(err.errno || errno.EBADF); });
+process.on("unhandledRejection", (err: CustomError) => { critical("unhandledRejection", err); process.exit(err.errno || errno.EBADF); });
 
 const cmd = new Command.Command(pkg.name);
 
@@ -26,6 +30,18 @@ async function reloadEnv() {
     }
     process.env.DOT_ENV_FILE = filename;
     env.reload();
+  }
+
+  // check for the most common case of database miss-configs
+  if (process.env.DB_DIALECT) {
+    initDb({});                   // throws if sqlite3 not installed
+    try {
+      await User.findOne();       // throws if db not initialized
+    } catch (err) {
+      if (process.argv.indexOf("src/jobs/createDb") < 0) {
+        throw new Error("Database set in environment is not valid. You may run 'npm run createDb' to create it.");
+      }
+    }
   }
 }
 
@@ -77,7 +93,7 @@ cmd
 
     const rc = await clusterStart(arr);
     if (rc) {
-      error("error:", errno.getStr(rc));
+      error("error:", errno.strError(rc));
       process.exit(rc);
     }
   });

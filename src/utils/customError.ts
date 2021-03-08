@@ -3,20 +3,30 @@
 // and gets printed nicely on JSON.stringify.
 // See discussion for details: https://github.com/Microsoft/TypeScript-wiki/blob/master/Breaking-Changes.md#extending-built-ins-like-error-array-and-map-may-no-longer-work
 //
-import * as os from "os";
+import { constants } from "os";
 import { merge } from "./copyIn";
 
 export class CustomError extends Error {
 
-  constructor(err?: Error | string) {
+  constructor(err?: CustomError | string, public readonly errno?: number, public readonly code?: string) {
     super((typeof err === "string") ? err : err.message);
 
     try {
       this.name = this.constructor.name;
-      if (typeof err !== "string") this.stack = err.stack;
-      Object.setPrototypeOf(this, new.target.prototype);            // restore prototype chain TS2.2 style
-      Object.defineProperty(this, "message", { enumerable: true }); // make 'message' avail in JSON.stringify
-      Object.defineProperty(this, "stack", { enumerable: true });   // make 'stack' avail in JSON.stringify
+      if (typeof err !== "string") {
+        ["stack", "code", "errno"].forEach(key => {
+          if (typeof Object(err)[key] !== "undefined") {
+            Object(this)[key] = Object(err)[key];
+          }
+        });
+      }
+
+      ["name", "message", "stack", "code", "errno"].forEach(key => {
+        if (typeof Object(this)[key] !== "undefined") {
+          Object.defineProperty(this, key, { enumerable: true });     // make propery avail in JSON.stringify
+        }
+      });
+      Object.setPrototypeOf(this, new.target.prototype);              // restore prototype chain TS2.2 style
     } catch (e: unknown) {
       // some error helpers make properties read-only
     }
@@ -24,13 +34,11 @@ export class CustomError extends Error {
 }
 
 //
-// get the error string of the input errno
+// strError: function to get the error string of the input errno
 //
 export const errno = merge({
-  getStr(_errno: number) {
-    for (const key in this) {                 // eslint-disable-line
-      if (this[key] === _errno) return key;
-    }
-    return _errno.toString();
+  strError(_errno: number) {
+    const found = Object.keys(errno).find(key => (Object(errno)[key] === _errno));
+    return found || _errno.toString();
   },
-}, os.constants.errno);
+}, constants.errno);

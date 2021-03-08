@@ -43,13 +43,19 @@ export const afs = {
   // recursive remove directory
   rmdirRecursive: async (folder: string) => {
 
-    const waitFor: Promise<void>[] = [];
+    const files: Promise<void>[] = [];
+    const dirs = new AsyncArray<_fs.Dirent>();
     if (await afs.exists(folder)) {
       afs.dirIterate(folder, (dirent) => {
-        waitFor.unshift(dirent.isDirectory() ? afs.rmdir(dirent.name) : afs.unlink(dirent.name));
+        if (dirent.isDirectory()) {
+          dirs.push(dirent);
+        } else {
+          files.push(afs.unlink(dirent.name));
+        }
       });
     }
-    return Promise.all(waitFor);
+    await Promise.all(files);
+    return dirs.asyncForEach(async dir => { await afs.rmdir(dir.name); });
   },
 
 };

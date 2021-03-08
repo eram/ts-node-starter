@@ -4,7 +4,7 @@
 import cluster from "cluster";
 import * as fs from "fs";
 import path from "path";
-import { apm, assert, AsyncArray, count, Counter, env, errno, error, getLogger, Histogram, LogLevel, Meter, POJO } from "../../utils";
+import { apm, AsyncArray, count, Counter, env, errno, getLogger, Histogram, LogLevel, Meter, POJO } from "../../utils";
 import { Bridge, BridgeError, Packet, PktData, PKT_TOPIC } from "./bridge";
 import { initMaster } from "./master";
 import { WorkerConf, WorkerInfo, WorkerState } from "./workerConf";
@@ -13,11 +13,12 @@ import { WorkerConf, WorkerInfo, WorkerState } from "./workerConf";
 const logger = getLogger("Cluster", LogLevel.info);
 const info = logger.info.bind(logger);
 const warn = logger.warn.bind(logger);
+const error = logger.error.bind(logger);
+const assert = logger.assert;
 const apps = new Array<WorkerConf>();
 let interval: NodeJS.Timeout;
 let bridge: Bridge;
 let clusterStopping = false;
-
 
 // bridge master dispatcher
 // dispatch packet to the requested process or handle it here if it's directed to master
@@ -65,14 +66,14 @@ function clusterDispatch(pkt: Readonly<Packet>) {
           if (pkt._dest === worker.id) {
             worker.send(pkt, undefined, (err: BridgeError) => {
               if (err) {
-                logger.error("clusterDispatch failed:", err);
+                error("clusterDispatch failed:", err);
               }
             });
           }
         });
     } // switch
   } catch (err) {
-    logger.error("clusterDispatch", err.stack || err);
+    error("clusterDispatch", err.stack || err);
   }
 }
 
@@ -99,9 +100,9 @@ function clusterApmHandler(data: PktData, reply: (data: PktData) => void) {
     values.forEach(value => {
       if (value.status === "fulfilled") {
         const pkt = value.value;
-        logger.assert(pkt.msg === "apm");
+        assert(pkt.msg === "apm");
         if (pkt.error || typeof pkt.apm !== "object") {
-          logger.error("apm response error", pkt.error);
+          error("apm response error", pkt.error);
           apmErrors++;
         } else {
           const pktApm = pkt.apm;
@@ -118,24 +119,24 @@ function clusterApmHandler(data: PktData, reply: (data: PktData) => void) {
                   Histogram.instance(key, pktApm[type][key]);
                   break;
                 default:
-                  logger.error("apm: unnkown counter type:", type);
+                  error("apm: unnkown counter type:", type);
               }
             });
           });
         }
       } else {
         // rejected / timeout??
-        logger.error("apm response rejected:", value.reason);
+        error("apm response rejected:", value.reason);
         apmErrors++;
       }
     });
   }, err => {
     // we should not get here...
-    logger.error("allSettled error:", err);
+    error("allSettled error:", err);
     apmErrors++;
   }).catch(err => {
     // we should not get here either...
-    logger.error("allSettled catch:", err);
+    error("allSettled catch:", err);
     apmErrors++;
   }).finally(() => {
     if (apmErrors) count("cluster.apmErrors", apmErrors);
@@ -167,11 +168,11 @@ function clusterStop(signal: NodeJS.Signals) {
     const app = apps[inf.idx];
 
     if (app.shutdown_with_message && info.state === WorkerState.pinging) {
-      info(`wroker ${worker.id}: ${signal}`);
+      info(`worker ${worker.id}: ${signal}`);
       const msg: PktData = { msg: "signal", value: signal };
       bridge.post(msg, worker.id);
     } else {
-      info(`wroker ${worker.id}: destroy`);
+      info(`worker ${worker.id}: destroy`);
       worker.destroy(signal);
       // we want to see the cluster on "exit" so we can cleanup
       cluster.emit("exit", worker, 0, signal);
@@ -193,7 +194,7 @@ function clusterStop(signal: NodeJS.Signals) {
       cluster.workers[k].process.kill();
     });
     process.exit(0);
-  }, WorkerConf.KILL_TIMEOUT / 2).unref();
+  }, WorkerConf.WD_CHECK_INTERVAL).unref();
 }
 
 
@@ -205,14 +206,14 @@ async function workerCheck(worker: cluster.Worker) {
 
     // ping worker
     const pkt = await bridge.send("ping", worker.id);
-    logger.assert(pkt.msg === "pong");
+    assert(pkt.msg === "pong");
 
     // check health
     if (!!app.max_memory_restart && Number(pkt.mem) > app.max_memory_restart && inf.lastMem > app.max_memory_restart) {
       info(`worker ${worker.id} memory twice over max: ${pkt.mem} MB`);
       return false;
     }
-    if (Number(pkt.cpu >= 99 && inf.lastCpu >= 99)) {
+    if (Number(pkt.cpu >= 99) && inf.lastCpu >= 99) {
       info(`worker ${worker.id} CPU twice over max: ${pkt.cpu}%`);
       return false;
     }
@@ -223,7 +224,7 @@ async function workerCheck(worker: cluster.Worker) {
   } catch (err) {
     // if the worker is not implementing the bridge all the pings send will timeout.
     // this does not mean the worker is unhealthy. the worker state will remain online/listening.
-    logger.info(`ping to worker ${worker.id} did not answer.`, err.stack || err);
+    info(`ping to worker ${worker.id} did not answer.`, err.stack || err);
   }
   return true;
 }
@@ -274,7 +275,7 @@ async function clusterMaint() {
 
       case WorkerState.disconnected:
       default:
-        if (tDiff > WorkerConf.KILL_TIMEOUT) {
+        if (tDiff > WorkerConf.WD_TIMEOUT_RESTART) {
           warn(`worker ${worker.id} disconnected and still alive`);
           toKill.push(worker);
         }
@@ -306,7 +307,7 @@ function clusterFork(app: WorkerConf, idx: number, restarts = 0) {
   const save2 = process.env.APP_NAME;
   process.env.APP_NAME = `${process.env.APP_NAME}:${app.name}`;
 
-  const save3 = process.cwd();
+  const saveCwd = process.cwd();
   process.chdir(app.cwd);
 
   cluster.setupMaster({
@@ -320,7 +321,7 @@ function clusterFork(app: WorkerConf, idx: number, restarts = 0) {
 
   process.env.LOG_ADD_TIME = save1;
   process.env.APP_NAME = save2;
-  process.chdir(save3);
+  process.chdir(saveCwd);
 
   if (app.out_file) {
     const fname = path.resolve(app.out_file + (app.combine_logs ? "" : `.${worker.id}`));
@@ -353,7 +354,7 @@ function clusterFork(app: WorkerConf, idx: number, restarts = 0) {
  */
 export async function clusterStart(arr: POJO[]) {
 
-  assert(cluster.isMaster, "cluster start cannot be run from a worker node");
+  assert(cluster.isMaster, "cluster start must be run from a master node");
   info(`cluster starting on pid ${process.pid}...`);
 
   // restart previous cluster
@@ -408,13 +409,13 @@ export async function clusterStart(arr: POJO[]) {
     info(`worker ${worker.id} died. exit code: ${code}, signal: ${signal}`);
 
     if ((!!code || !!signal) && app.autorestart && !clusterStopping) {
-      if (inf.restarts < app.max_restarts) {
+      if (app.max_restarts && inf.restarts < app.max_restarts) {
         restarting = true;
         const timeout = app.restart_delay + app.exp_backoff_restart_delay * (inf.restarts ** 2);
         info(`reastrting ${worker.id} in ${timeout} ms`);
         setTimeout(() => { clusterFork(apps[inf.idx], inf.idx, inf.restarts + 1); }, timeout);
       } else {
-        info(`wroker ${worker.id} too many restarts`);
+        info(`worker ${worker.id} too many restarts`);
       }
     }
 
@@ -447,11 +448,21 @@ export async function clusterStart(arr: POJO[]) {
 
   // load apps
   if (!Array.isArray(arr) || !arr.length) {
-    logger.error("Invalid config");
+    error("Invalid config");
     return errno.EBADMSG;
   }
 
   arr.forEach((conf: WorkerConf) => apps.push(new WorkerConf(conf)));
+
+  // add a watchdog for cluster master (this process)
+  const argv = [...process.argv];
+  argv.shift();
+  apps.push(new WorkerConf({
+    name: "cluster watchdog",
+    script: path.join(__dirname, "watchdog.ts"),
+    args: argv.join(" "),
+    instances: 1,
+  }));
 
   // Fork workers
   apps.forEach((app, idx) => {
@@ -460,6 +471,6 @@ export async function clusterStart(arr: POJO[]) {
     }
   });
 
-  interval = setInterval(() => { void clusterMaint(); }, WorkerConf.KILL_TIMEOUT / 2).unref();
+  interval = setInterval(() => { void clusterMaint(); }, WorkerConf.WD_TIMEOUT_RESTART / 2).unref();
   return 0;
 }

@@ -2,7 +2,6 @@
     "compilerOptions": {
       "module": "commonjs",
       "target": "ES2020",
-      "noImplicitAny": true,
       "outDir": "./dist",
       "sourceMap": true,
       "esModuleInterop": true,
@@ -12,6 +11,7 @@
       "skipLibCheck": true,
       "resolveJsonModule": true,
       "typeRoots": ["./node_modules/@types", "./src/types"],      
+      "noImplicitAny": true,
     },
     "include": [
       "src/**/*",
@@ -19,11 +19,5 @@
       "src/**/index.js",
       "scripts/*.js",
       "scripts/*.ts", 
-    ],
-    "paths": {
-      "*": [
-          "node_modules/*",
-          "src/types/*.d.ts"
-      ]
-    }
+    ]
   }

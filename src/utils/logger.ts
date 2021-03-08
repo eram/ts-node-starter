@@ -3,9 +3,26 @@ import { format } from "util";
 import * as cluster from "cluster";
 import process from "process";
 import { grey, blueBright, red } from "chalk";
+import assertMod, { fail, ok, strictEqual, deepStrictEqual, notDeepStrictEqual, throws, doesNotThrow, ifError, rejects, doesNotReject, strict } from "assert";
 import { IDictionary, POJO } from "./pojo";
 
 // TODO: consider using npm log-buffer to improve logger performance
+
+// hack to workaround https://github.com/microsoft/TypeScript/issues/36931
+type AssertT = {
+  fail: typeof fail,
+  ok: typeof ok,
+  strictEqual: typeof strictEqual,
+  deepStrictEqual: typeof deepStrictEqual,
+  notDeepStrictEqual: typeof notDeepStrictEqual,
+  throws: typeof throws,
+  doesNotThrow: typeof doesNotThrow,
+  ifError: typeof ifError,
+  rejects: typeof rejects,
+  doesNotReject: typeof doesNotReject,
+  strict: typeof strict,
+} & ((value: boolean, message?: string) => void);
+
 
 // this enum must match with CoralogixLogger.Severity
 export enum LogLevel { debug = 1, trace = 2, info = 3, warn = 4, error = 5, critical = 6 }
@@ -112,13 +129,7 @@ export class Logger {
     this._logFn(LogLevel.critical, ...params);
   }
 
-  assert(cond: boolean, ...params: unknown[]) {
-    if (!(cond)) {
-      const err = `[ASSERTION FAILED] ${format(...params)}`;
-      this._logFn(LogLevel.critical, err);
-      throw new Error(err);
-    }
-  }
+  assert: AssertT = assertMod;
 }
 
 
@@ -132,7 +143,7 @@ export const log = gLogger.info.bind(gLogger);
 export const warn = gLogger.warn.bind(gLogger);
 export const error = gLogger.error.bind(gLogger);
 export const critical = gLogger.critical.bind(gLogger);
-export const assert = gLogger.assert.bind(gLogger);
+export const assert = gLogger.assert;
 
 
 export function hookConsole() {

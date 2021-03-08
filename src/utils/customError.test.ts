@@ -102,10 +102,10 @@ describe("CustomError", () => {
 describe("errno", () => {
 
   test("ENOENT", () => {
-    expect(errno.getStr(errno.ENOENT)).toEqual("ENOENT");
+    expect(errno.strError(errno.ENOENT)).toEqual("ENOENT");
   });
 
   test("other", () => {
-    expect(errno.getStr(5555)).toEqual("5555");
+    expect(errno.strError(5555)).toEqual("5555");
   });
 });

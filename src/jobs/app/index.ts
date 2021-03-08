@@ -3,8 +3,7 @@ import { worker } from "cluster";
 import { initClient } from "../../libs/cluster";
 import { initDb, checkDbAlive } from "../../models";
 import { setupKoa } from "./setupKoa";
-import { critical, env, errno, info } from "../../utils";
-import { apm } from "../../utils/apm";
+import { critical, CustomError, env, errno, info, sleep, apm } from "../../utils";
 
 
 export async function main() {
@@ -28,6 +27,8 @@ export async function main() {
     setTimeout(() => { process.exit(0); }, 100);
   });
 
+  await sleep(100);
+
   info("server listerning on", process.env.PUBLIC_URL || `http://localhost:${port}`);
   return 0;
 }
@@ -35,8 +36,8 @@ export async function main() {
 // node entry point (TS)
 process.stdin.setEncoding("utf8");
 process.stdout.setEncoding("utf8");
-process.on("uncaughtException", (err) => { critical(err); process.exit(errno.EEXIST); });
-process.on("unhandledRejection", (err) => { critical(err); process.exit(errno.EEXIST); });
+process.on("uncaughtException", (err: CustomError) => { critical("uncaughtException", err); process.exit(err.errno || errno.EBADF); });
+process.on("unhandledRejection", (err: CustomError) => { critical("unhandledRejection", err); process.exit(err.errno || errno.EBADF); });
 main().then((rc: number) => {
   if (rc) {
     process.emit("exit", rc);

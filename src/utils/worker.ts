@@ -15,7 +15,7 @@ export class Worker extends JsWorker {
     super(`
       const wk = require('worker_threads');
       require('ts-node').register();
-      let file = wk.workerData._filename_;
+      const file = wk.workerData._filename_;
       delete wk.workerData._filename_;
       require(file);
       `, opts);

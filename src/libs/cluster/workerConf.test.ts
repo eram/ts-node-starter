@@ -1,14 +1,14 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import { WorkerConf, WorkerInfo, WorkerState } from "./workerConf";
 
-describe("WrokerInfo", () => {
+describe("WorkerConf tests", () => {
 
   test("WorkerConf invalid", () => {
     expect(() => new WorkerConf({ instances: 1 })).toThrow(/name/);
   });
 
 
-  test("WorkerConf setup", () => {
+  test("WorkerConf ctor", () => {
 
     const conf: Partial<WorkerConf> = {
       name: "test",
@@ -24,13 +24,13 @@ describe("WrokerInfo", () => {
   });
 
 
-  test("WorkerConf setup", () => {
+  test("WorkerConf ctor param auto-fixing", () => {
 
     const conf: Partial<WorkerConf> = {
-      name: "test", // app name
+      name: "test",
       script: __filename, // script to run: TS or JS file
-      instances: 100, // number of workers to run. max = cpu count
-      kill_timeout: 10,
+      instances: 100,     // too big!
+      kill_timeout: 10,   // too small!
     };
 
     const app = new WorkerConf(conf);
