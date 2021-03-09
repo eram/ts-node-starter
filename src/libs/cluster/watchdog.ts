@@ -1,4 +1,5 @@
 /* istanbul ignore file */
+// testing cluster functionality is out of scope for this project.
 
 import cluster from "cluster";
 import { getLogger, LogLevel, errno, critical, CustomError, assert, env } from "../../utils";
@@ -16,9 +17,7 @@ const WD_MAX_MEMORY_RESTART = Number(process.env.WD_MAX_MEMORY_RESTART) || 10_00
 
 function restartMaster(sig = "SIGINT") {
 
-  const argv = [...process.argv];
-  argv.shift();
-  argv.shift();
+  const argv = process.argv.slice(2);
   const command = `node ${env.isDebugging ? "--inspect " : ""}${argv.join(" ")}`;
   logger.info("running new master:", command);
   void system(command);
@@ -34,7 +33,7 @@ function restartMaster(sig = "SIGINT") {
 }
 
 
-void (async () => {
+(() => {
 
   assert(cluster.isWorker, "watchdog must run on a worker");
 

@@ -20,7 +20,7 @@
     "jest": "jest --watch",
     "dev": "ts-node-dev --respawn --transpile-only --exit-child --rs --inspect -- src src/jobs/app",
     "dev:cluster": "ts-node-dev --respawn --transpile-only --exit-child --rs --inspect -- src cluster ./cluster.config.js",
-    "start": "node src cluster ./cluster.config.js",
+    "start": "node src --json cluster ./cluster.config.js",
     "start:node": "node src job src/jobs/app",
     "createDb": "node src job src/jobs/createDb",
     "build": "npm run clean && tsc"

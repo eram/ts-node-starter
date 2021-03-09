@@ -1,9 +1,11 @@
 # ts-node-starter
-This is a Typescript starter project:
+This is a Typescript starter project meant to get you up and running with a NodeJS API or a micro-service project. The setup includes an HTTP server, REST APIs, a database, authentication, cluster support, and more. This setup is optimized for use in a container/k8s environment - dockerfile and YAMLs included. 
+
+## features:
 - NodeJS v14+ / ES2020 environment 
 - Typescript v4+ integrated into debugging and running. JS files are never created! [ts-node]
 - VSCode integration: debug code and tests with F5 etc.
-- Docker and Kubernetese config files:  service, deployment, job, config-maps and secrets.
+- Docker and Kubernetese config files: service, deployment, cron-job, config-maps and secrets.
 - Environment variables loaded from .env file [dotEnv].
 - Command-line option parser [commander].
 - App server intergated [koa].
@@ -18,24 +20,32 @@ This is a Typescript starter project:
   - User base
 - User authentication: SSO with github oAuth.
 - Cluster support built-in (no need for pm2 or nodemon).
-  - Multiple apps' workers management (aka threads/forks).
+  - Multiple app workers management (aka threads/forks).
   - Watchdog checking workers' responsivness and CPU/mem consumtion.
+  - Wacthdog checking the cluster's master - can restart the whole cluster if needed.
   - Inter-worker messaging (no need for pm2/io).
   - Workers' console piped to cluster
-  - Dynamic plugins support
+  - Dynamic plugins loading
 - APM library: counters, meters and histograms (no need for pm2/io).
-- Logger hooking into console with raw/json output.
+- Logger hooking into the console producing raw or json output (for ELK).
 - Utilities: trie for large structures cross-worker data passing; state-machine etc.
-- Unit tests with full converage [jest].
+- Unit tests with full coverage [jest].
 - Linter: opinionated code styling enforcement [eslint/typescript].
 - Code quality enforcement included in linter [sonar]
 
 ## setup
+Opt A: use the companion ```create-ts-node-starter``` repo:
 1. install nodejs and git
-1. ```> git clone ...```
+1. ```> npm init ts-node-starter <project-name> [vscode]```
+
+Opt B: 
+1. install nodejs and git
+1. ```> git clone <this repo> <new folder>```
+1. ```> cd <new folder>```
 1. ```> npm install```
 1. ```> npm run createDb```
 1. ```> npm run start:dev```
+1. ```> code .```
 
 ## config files
 config files under root folder:
@@ -51,7 +61,6 @@ config files under root folder:
 
 ## folder structure
 ```
-+
 +-- <project root>      project config files
   +-- src               commandline parser
     +-- controllers     API endpoints
@@ -70,7 +79,12 @@ config files under root folder:
   +-- k8s               yamls for Kubernetese
 ```
 
+## FAQ
+Q: What if I like to use single-quotes for strings?
+
+A: Change ```"quotes"``` line in ```.eslintrc.json``` file from ```"double"``` to ```"single"``` and then ```> npm run lint```
+
 ## further reading
 - [NodeJS performance-killers](https://itnext.io/my-list-of-typical-performance-killers-of-nodejs-web-applications-60349b898234)
 - [Implementing 12-factor apps with Kubernetese](https://medium.com/ibm-cloud/kubernetes-12-factor-apps-555a9a308caf)
-- 
+

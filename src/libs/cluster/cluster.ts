@@ -263,7 +263,7 @@ async function clusterMaint() {
           warn(`worker ${worker.id} healthcheck timeout`);
           toKill.push(worker);
         }
-        /* fall through */
+      /* fall through */
 
       case WorkerState.listening:
         // try to ping worker
@@ -455,14 +455,15 @@ export async function clusterStart(arr: POJO[]) {
   arr.forEach((conf: WorkerConf) => apps.push(new WorkerConf(conf)));
 
   // add a watchdog for cluster master (this process)
-  const argv = [...process.argv];
-  argv.shift();
-  apps.push(new WorkerConf({
-    name: "cluster watchdog",
-    script: path.join(__dirname, "watchdog.ts"),
-    args: argv.join(" "),
-    instances: 1,
-  }));
+  if (process.env.WD_ENABLED) {
+    const argv = process.argv.slice(1);
+    apps.push(new WorkerConf({
+      name: "cluster watchdog",
+      script: path.join(__dirname, "watchdog.ts"),
+      args: argv.join(" "),
+      instances: 1,
+    }));
+  }
 
   // Fork workers
   apps.forEach((app, idx) => {
