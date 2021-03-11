@@ -27,7 +27,6 @@ export class WorkerConf {
 
   kill_timeout: number;                 // timeout to kill the an unhealthy worker
   max_memory_restart: number | string;  // max memory usage for a healthy worker: "50K"/"1024M"/"1G"
-  shutdown_with_message: boolean;       // send worker a SIGTERM or terminate it
   time: boolean;                        // add time to logs
 
   pid_file: string;                     // dir for pid files. filename "<app_name>-<worker_id>.pid"
@@ -37,6 +36,7 @@ export class WorkerConf {
   /* eslint-enable @typescript-eslint/naming-convention */
 
   /* these features are not implemented */
+  // shutdown_with_message: boolean;    // send worker a SIGTERM or terminate it
   // interpreter: “/usr/bin/python”;
   // interpreter_args: ”–harmony”;
   // watch: ["src"];
@@ -74,7 +74,6 @@ export class WorkerConf {
     this.exp_backoff_restart_delay = Number(obj.exp_backoff_restart_delay) || 1000;
     this.kill_timeout = Math.max(Number(obj.kill_timeout), WorkerConf.WD_TIMEOUT_RESTART);
     this.max_memory_restart = WorkerConf.toMB(String(obj.max_memory_restart || "00").toUpperCase());
-    this.shutdown_with_message = Boolean(obj.shutdown_with_message);
     this.time = Boolean(obj.time);
     this.pid_file = String(obj.pid_file || "");
     this.out_file = String(obj.out_file || "");

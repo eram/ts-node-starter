@@ -50,16 +50,14 @@ class TestPlugin extends Plugin.PluginBase {
 
 // function is used by the 'require' test above
 export const initPlugin: Plugin.InitPluginFn = async (opts: Partial<Plugin.PluginParams>) => {
-  let plugin: TestPlugin;
   try {
-    const p = new TestPlugin(opts);
-    const rc = await p.init();
+    const plugin = new TestPlugin(opts);
+    const rc = await plugin.init();
     if (!rc) throw new Error("init failed");
-    plugin = p;
+    return plugin;
   } catch (err) {
     console.error("plugin error:", err.message || err);
+    return undefined;
   }
-
-  return plugin;
 };
 

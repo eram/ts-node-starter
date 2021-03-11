@@ -1,9 +1,15 @@
 import * as path from "path";
-import { env, getLogger, LogLevel, sleep, errno, critical, CustomError } from "../../utils";
+import { env, getLogger, LogLevel, sleep, atTerminate } from "../../utils";
 
 async function main() {
+
+  process.stdin.setEncoding("utf8");
+  process.stdout.setEncoding("utf8");
+
   const jobName = path.basename(__dirname);
   const log = getLogger(jobName, LogLevel.info);
+  atTerminate(() => { log.info("job terminated"); });
+
   env.print(log);
 
   // ----
@@ -16,10 +22,6 @@ async function main() {
 }
 
 // node entry point (TS)
-process.stdin.setEncoding("utf8");
-process.stdout.setEncoding("utf8");
-process.on("uncaughtException", (err: CustomError) => { critical("uncaughtException", err); process.exit(err.errno || errno.EBADF); });
-process.on("unhandledRejection", (err: CustomError) => { critical("unhandledRejection", err); process.exit(err.errno || errno.EBADF); });
 main().then((rc: number) => {
   if (rc) {
     process.emit("exit", rc);

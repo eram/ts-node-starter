@@ -1,7 +1,7 @@
 import * as path from "path";
 import cluster from "cluster";
 import * as Command from "commander";
-import { env, errno, error, afs, critical, assert, CustomError } from "./utils";
+import { env, errno, error, afs, assert } from "./utils";
 import { clusterStart } from "./libs/cluster";
 import { initDb, User } from "./models";
 
@@ -12,8 +12,6 @@ assert(!cluster.isWorker, "command cannot run from a worker process");
 
 process.stdin.setEncoding("utf8");
 process.stdout.setEncoding("utf8");
-process.on("uncaughtException", (err: CustomError) => { critical("uncaughtException", err); process.exit(err.errno || errno.EBADF); });
-process.on("unhandledRejection", (err: CustomError) => { critical("unhandledRejection", err); process.exit(err.errno || errno.EBADF); });
 
 const cmd = new Command.Command(pkg.name);
 

@@ -12,7 +12,7 @@ export class PluginParams {
   readonly bridge?: Bridge;
 }
 
-export class PluginBase extends PluginParams {
+export abstract class PluginBase extends PluginParams {
 
   initialized = false;
 
@@ -27,25 +27,24 @@ export class PluginBase extends PluginParams {
     console.info(`plugin ${this.name} initialzed on ${this.bridge.id}`);
     return true;
   }
-
-  async fini() {
-    this.initialized = false;
-  }
 }
 
-// The plugin main file must implement a InitPluginFn function.
-// This is an example of such a function
-export const initPlugin = async (opts: Partial<PluginParams>) => {
-  let plugin: PluginBase;
+// the plugin main file must implement a InitPluginFn function.
+// here is an example of such implementation:
+/* istanbul ignore next */
+export const initPlugin = async (_opts: Partial<PluginParams>) => {
   try {
-    const p = new PluginBase(opts);
-    const rc = await p.init();
-    if (!rc) throw new Error("init failed");
-    plugin = p;
+    let plugin: PluginBase;
+    /* ------BasePlugin is abstract------------
+    plugin = new PluginBase(opts);
+    const rc = await plugin.init();
+    if (!rc) throw new Error("plugin init failed");
+    -------------------- */
+    return plugin;
   } catch (err) {
     console.error("plugin error:", err.message || err);
+    return undefined;
   }
-  return plugin;
 };
 
 export type InitPluginFn = typeof initPlugin;

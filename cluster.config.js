@@ -17,7 +17,6 @@ module.exports = {
       restart_delay: 1000,
       max_restarts: 100,
       exp_backoff_restart_delay: 200,
-      shutdown_with_message: true,
       kill_timeout: 2000,
       wait_ready: true,
       time: false,
@@ -27,6 +26,7 @@ module.exports = {
       // combine_logs: false,
 
       /** * unsupported params ** */
+      // shutdown_with_message: true,
       // exec_mode: "cluster",
       // min_uptime: 1000,
       // cron_restart: "1 0 * * *"

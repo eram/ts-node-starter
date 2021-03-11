@@ -4,7 +4,7 @@
 import cluster from "cluster";
 import * as fs from "fs";
 import path from "path";
-import { apm, AsyncArray, count, Counter, env, errno, getLogger, Histogram, LogLevel, Meter, POJO } from "../../utils";
+import { apm, AsyncArray, atTerminate, count, Counter, env, errno, getLogger, Histogram, LogLevel, Meter, POJO } from "../../utils";
 import { Bridge, BridgeError, Packet, PktData, PKT_TOPIC } from "./bridge";
 import { initMaster } from "./master";
 import { WorkerConf, WorkerInfo, WorkerState } from "./workerConf";
@@ -18,7 +18,6 @@ const assert = logger.assert;
 const apps = new Array<WorkerConf>();
 let interval: NodeJS.Timeout;
 let bridge: Bridge;
-let clusterStopping = false;
 
 // bridge master dispatcher
 // dispatch packet to the requested process or handle it here if it's directed to master
@@ -148,56 +147,6 @@ function clusterApmHandler(data: PktData, reply: (data: PktData) => void) {
 }
 
 
-function clusterStop(signal: NodeJS.Signals) {
-  info("cluster stopping on", signal);
-
-  clusterStopping = true;
-  if (interval) clearInterval(interval);
-  interval = undefined;
-
-  // prevent EPIPE errors when process goes down
-  process.stdout.on("error", err => {
-    if (err.code === "EPIPE") {
-      process.exit(0);
-    }
-  });
-
-  Object.keys(cluster.workers).forEach(k => {
-    const worker = cluster.workers[k];
-    const inf = getInfo(worker);
-    const app = apps[inf.idx];
-
-    if (app.shutdown_with_message && info.state === WorkerState.pinging) {
-      info(`worker ${worker.id}: ${signal}`);
-      const msg: PktData = { msg: "signal", value: signal };
-      bridge.post(msg, worker.id);
-    } else {
-      info(`worker ${worker.id}: destroy`);
-      worker.destroy(signal);
-      // we want to see the cluster on "exit" so we can cleanup
-      cluster.emit("exit", worker, 0, signal);
-    }
-  });
-
-  // live workers have been signaled >> cluster would exit from cluster.on("exit")
-  setImmediate(() => {
-    const live = Object.keys(cluster.workers).length;
-    if (!live) {
-      process.exit(0);
-    }
-  });
-
-  // failsafe timeout
-  setTimeout(() => {
-    info("clusterDestory timeout");
-    Object.keys(cluster.workers).forEach(k => {
-      cluster.workers[k].process.kill();
-    });
-    process.exit(0);
-  }, WorkerConf.WD_CHECK_INTERVAL).unref();
-}
-
-
 async function workerCheck(worker: cluster.Worker) {
 
   try {
@@ -242,7 +191,7 @@ async function clusterMaint() {
     const app = apps[inf.idx];
 
     const tDiff = Date.now() - inf.lastUpdate;
-    info(`worker ${worker.id} isDead=${worker.isDead()} info=${inf.idx}:${WorkerState[inf.state]} tDiff=${tDiff / 1000} sec`);
+    info(`worker ${worker.id} info=${inf.idx}:${WorkerState[inf.state]} tDiff=${tDiff / 1000} sec`);
 
     if (worker.isDead()) {
       toKill.push(worker);
@@ -263,8 +212,8 @@ async function clusterMaint() {
           warn(`worker ${worker.id} healthcheck timeout`);
           toKill.push(worker);
         }
-      /* fall through */
 
+      // eslint-disable-next-line no-fallthrough
       case WorkerState.listening:
         // try to ping worker
         if (!await workerCheck(worker)) {
@@ -295,7 +244,6 @@ async function clusterMaint() {
 
 function clusterFork(app: WorkerConf, idx: number, restarts = 0) {
 
-  if (clusterStopping) return;
   if (!fs.existsSync(app.script)) {
     error("'script' must be a js/ts file'");
     return;
@@ -357,16 +305,8 @@ export async function clusterStart(arr: POJO[]) {
   assert(cluster.isMaster, "cluster start must be run from a master node");
   info(`cluster starting on pid ${process.pid}...`);
 
-  // restart previous cluster
-  if (apps.length) {
-    info("cluster restarting");
-    clusterStop("SIGTERM");
-    apps.length = 0;
-  }
-
   cluster.on("online", (worker) => {
     info(`worker ${worker.id} is online`);
-
     const inf = getInfo(worker);
     inf.state = WorkerState.online;
   });
@@ -408,7 +348,7 @@ export async function clusterStart(arr: POJO[]) {
 
     info(`worker ${worker.id} died. exit code: ${code}, signal: ${signal}`);
 
-    if ((!!code || !!signal) && app.autorestart && !clusterStopping) {
+    if ((!!code || !!signal) && app.autorestart) {
       if (app.max_restarts && inf.restarts < app.max_restarts) {
         restarting = true;
         const timeout = app.restart_delay + app.exp_backoff_restart_delay * (inf.restarts ** 2);
@@ -428,11 +368,7 @@ export async function clusterStart(arr: POJO[]) {
         process.exit(0);
       }, 500).unref();
     }
-  }); // exit
-
-  // Cluster can be stopped by SIGTERM or SIGINT.
-  process.on("SIGTERM", clusterStop);
-  process.on("SIGINT", clusterStop);
+  }); // on exit
 
   // initialize bridge master
   bridge = initMaster(new Bridge({
@@ -441,10 +377,11 @@ export async function clusterStart(arr: POJO[]) {
     onPkt: (cb: (packet: Packet) => void) => process.on("message", cb),
   }, logger));
   bridge.addCallback(clusterApmHandler.bind(bridge));
+  atTerminate(bridge.removeCallback.bind(bridge));
 
   // ping-pong myself - - just to make sure we're on :-)
-  const resp = await bridge.send("ping", "master");
-  logger.assert(!resp.error && resp.msg === "pong");
+  // const resp = await bridge.send("ping", "master");
+  // logger.assert(!resp.error && resp.msg === "pong");
 
   // load apps
   if (!Array.isArray(arr) || !arr.length) {
@@ -473,5 +410,6 @@ export async function clusterStart(arr: POJO[]) {
   });
 
   interval = setInterval(() => { void clusterMaint(); }, WorkerConf.WD_TIMEOUT_RESTART / 2).unref();
+  atTerminate(() => { clearInterval(interval); info("terminated"); });
   return 0;
 }
