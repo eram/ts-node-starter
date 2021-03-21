@@ -1,5 +1,5 @@
-import * as Cookies from "cookies";
 import Koa from "koa";
+import { cookieOptions } from "../libs/secure";
 import { User } from "../models";
 import { signToken, verifyToken } from "../utils";
 
@@ -108,14 +108,7 @@ export async function afterLogin(ctx: Koa.Context2, username: string) {
   userCache.set([username, claims.iat]);
 
   // cookie is used for further auth by the same client
-  const opts: Cookies.SetOption = {
-    expires: new Date(claims.exp * 1000),
-    secure: (process.env.NODE_ENV === "production"),
-    httpOnly: true,
-    sameSite: "strict",
-    overwrite: true,
-  };
-  ctx.cookies.set("token", token, opts);
+  ctx.cookies.set("token", token, cookieOptions(claims.exp * 1000));
 
   return claims;
 }
@@ -138,14 +131,7 @@ export async function refresh(ctx: Koa.Context) {
   userCache.set([username, claims.iat]);
 
   // replace cookie
-  const opts: Cookies.SetOption = {
-    expires: new Date(claims.exp * 1000),
-    secure: (process.env.NODE_ENV === "production"),
-    httpOnly: true,
-    sameSite: "strict",
-    overwrite: true,
-  };
-  ctx.cookies.set("token", token, opts);
+  ctx.cookies.set("token", token, cookieOptions(claims.exp * 1000));
 
   // respond with the new token so it can be used to access other servers on the same cluster
   ctx.body = { token, user: username, expires: claims.exp * 1000 };
@@ -164,7 +150,7 @@ export async function revoke(ctx: Koa.Context) {
   await user.save();
 
   userCache.delete([username, ctx.state.jwt.iat]);
-  ctx.cookies.set("token"); // expire this cookie now
+  ctx.cookies.set("token", undefined, cookieOptions(0)); // expire this cookie now
 
   ctx.status = 200;
   ctx.set("Cache-Control", "no-cache");

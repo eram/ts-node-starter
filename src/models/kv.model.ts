@@ -1,4 +1,4 @@
-import { DataTypes, Model, Sequelize } from "sequelize";
+import { CreateOptions, DataTypes, Model, Sequelize } from "sequelize";
 import { assert, copyIn } from "../utils";
 
 export class KV extends Model {
@@ -12,10 +12,18 @@ export class KV extends Model {
   createdAt: Date;
   updatedAt: Date;
 
-  constructor(kv: Partial<KV> = {}) {
-    super();
-    copyIn<KV>(this, kv);
+  constructor(kv?: Readonly<Partial<KV>>, options?: CreateOptions) {
+    super(kv, options);
+    copyIn(this, kv);
     assert(!!this.key);
+
+    // it is an error to instantiate a model using 'new': it is missing the
+    // creation options and messes with the isNewRecord property.
+    const check = { stack: "" };
+    Error.captureStackTrace(check);
+    if (check.stack.indexOf("at Function.build") < 0) {
+      throw new Error("use Model.build() or Model.create() instead of 'new'");
+    }
   }
 }
 
@@ -49,13 +57,15 @@ export function init(sequelize: Sequelize) {
 
 export class KVStoreParams {
   name: string;
-  timeout = 0;
-  keyfn = (n: string) => `${this.name}-${n}`;
+  timeout = 0;                                      // default item validity time
+  keyfn = (str: string) => `${this.name}-${str}`;   // defauly key name in VK table
 }
 
 export class KVStore extends KVStoreParams {
 
-  constructor(opts: string | Partial<KVStoreParams>) {
+  readonly MAX_LEN = Object(KV.rawAttributes.key.type)._length;
+
+  constructor(opts: string | Readonly<Partial<KVStoreParams>>) {
     super();
     if (typeof opts === "string") {
       opts = { name: opts };
@@ -64,10 +74,11 @@ export class KVStore extends KVStoreParams {
   }
 
   async set(key: string, val: string, timeout?: number) {
-    assert(key.length + this.name.length + 1 < 128 && val.length < 128, "key and val length must be shorter than 128");
+    const kvkey = this.keyfn(key);
+    assert(kvkey.length < this.MAX_LEN && val.length < this.MAX_LEN, `key and val must be shorter than ${this.MAX_LEN}`);
     timeout = (typeof timeout === "undefined") ? this.timeout : timeout;
     await KV.create({
-      key: this.keyfn(key),
+      key: kvkey,
       val,
       exp: timeout ? new Date(Date.now() + timeout) : 0,
     });

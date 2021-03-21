@@ -1,5 +1,5 @@
-import * as Koa from "koa";
 import joiRouter from "koa-joi-router";
+import Koa from "../utils/koa";
 import { init } from "./openApiDocs";
 
 describe("openApiDocs middleware tests", () => {

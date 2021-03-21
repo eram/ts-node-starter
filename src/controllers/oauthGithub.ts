@@ -14,13 +14,16 @@ const github = {
   secret: String(process.env.OAUTH_GITHUB_SECRET),
 };
 
-const kv = new KVStore({ name: "githib-state", timeout: 10 * 60 * 1000 });
+let kv: KVStore;  // name: "github-state",
 
-async function authorize(ctx: Koa.Context) {
+async function authorize(ctx: Koa.Context2) {
+  const referrer = ctx.get("Referrer");
+  ctx.assert(referrer, 401, "Referrer header must be supplied on this call");
+
   // redirect to github oauth service
   // create a random token that is good for 10 mins
   const rand = (Math.round(Math.random() * 1000000)).toString();
-  await kv.set(rand, ctx.get("Referrer") || ctx.href);
+  await kv.set(rand, referrer);
 
   const url = new URL(`${github.authService}/authorize`);
   url.searchParams.set("client_id", github.clientId);
@@ -103,10 +106,14 @@ async function login(ctx: Koa.Context2, _next: Koa.Next): Promise<void> {
 
   // we're back from authorize
   const url = new URL(referrer);
-  const code = String(ctx.query.code || "");
-  ctx.assert(!!code, 400, "missing code in request body");
-
   try {
+    if (ctx.query.error) {
+      throw new Error(String(ctx.query.error_description || ctx.query.error || "Failed"));
+    }
+
+    const code = String(ctx.query.code || "");
+    ctx.assert(!!code || (ctx.query.user && ctx.query.exp), 400, "invalid request");
+
     const username = await getToken(code);
     const claims = await afterLogin(ctx, username);
 
@@ -123,9 +130,10 @@ async function login(ctx: Koa.Context2, _next: Koa.Next): Promise<void> {
 }
 
 
-export function init(router: joiRouter.Router, opts: Partial<typeof github> = {}) {
+export function init(router: joiRouter.Router, opts: Readonly<Partial<typeof github>> = {}) {
 
   copyIn(github, opts);
+  kv = new KVStore({ name: "github-state", timeout: 10 * 60 * 1000 });
 
   router.get("/sso/github/authorize",
     {

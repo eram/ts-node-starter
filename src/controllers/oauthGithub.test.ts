@@ -23,7 +23,7 @@ describe("oauthGithub tests", () => {
     await db.sync({ force: true });
 
     process.env.JWT_SECRET = "testSecret";
-    process.env.PUBLIC_URL = "";
+    process.env.PUBLIC_URL = "http://a.local";
     process.env.OAUTH_GITHUB_CLIENT_ID = "gitClientId";
     process.env.OAUTH_GITHUB_SECRET = "gitSecret";
 
@@ -43,7 +43,8 @@ describe("oauthGithub tests", () => {
     const ctx: Partial<Koa.Context> = {
       href,
       redirect: jest.fn((str) => { expect(str).toBeTruthy(); }),
-      get: jest.fn((str) => { expect(str).toBeTruthy(); return undefined; }),
+      get: jest.fn((str) => { expect(str).toBeTruthy(); return str === "Referrer" ? href : undefined; }),
+      assert: jest.fn((val: boolean, _code: number, str: string) => { if (!val) throw new Error(str); }) as never,
     };
 
     await oauth.login(ctx as Koa.Context, async () => Promise.resolve());
@@ -59,7 +60,8 @@ describe("oauthGithub tests", () => {
         const url2 = new URL(uri);
         state = url2.searchParams.get("state") || "";
       }),
-      get: jest.fn((str) => { expect(str).toBeTruthy(); return undefined; }),
+      get: jest.fn((str) => { expect(str).toBeTruthy(); return str === "Referrer" ? href : undefined; }),
+      assert: jest.fn((val: boolean, _code: number, str: string) => { if (!val) throw new Error(str); }) as never,
     };
 
     await oauth.login(ctx as Koa.Context, async () => Promise.resolve());
@@ -79,7 +81,7 @@ describe("oauthGithub tests", () => {
         const url2 = new URL(uri);
         user = url2.searchParams.get("user") || "";
       }),
-      get: jest.fn((str) => { expect(str).toBeTruthy(); return undefined; }),
+      get: jest.fn((str) => { expect(str).toBeTruthy(); return str === "Referrer" ? href : undefined; }),
       assert: ((v: boolean, status?: number, err?: string) => { if (!v) throw new Error(err); }) as never,
       cookies: { set: jest.fn((name, val, _opts) => { expect(name && val).toBeTruthy(); return ctx; }) } as never,
     };

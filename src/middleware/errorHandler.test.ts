@@ -1,6 +1,5 @@
 /* eslint-disable sonarjs/no-duplicate-string */
 import createError from "http-errors";
-import * as Koa from "koa";
 import {
   DatabaseError,
   SequelizeScopeError,
@@ -8,6 +7,7 @@ import {
   ValidationErrorItem as SequelizeValidationErrorItem,
 } from "sequelize";
 import Joi from "joi";
+import Koa from "../utils/koa";
 import { User } from "../models";
 import { CustomError } from "../utils/customError";
 import { errorHandler, koaOnError, setWarnRespTime } from "./errorHandler";

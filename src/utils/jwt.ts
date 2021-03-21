@@ -5,7 +5,7 @@ export class Claims implements IDictionary<boolean | number | string> {
   [key: string]: boolean | number | string;
   readonly error?: string;
   readonly user?: string;
-  readonly exp?: number; // expired at
+  readonly exp?: number; // expires at
   readonly iat?: number; // issued at
 }
 

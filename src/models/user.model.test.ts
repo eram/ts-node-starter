@@ -14,10 +14,13 @@ describe("user", () => {
     await db.sync({ force: true });
   });
 
+  test("create with new should throw", () => {
+    expect(() => new User({ username: "user0" })).toThrow(/build/);
+  });
+
   test("create user with revokedTokens", async () => {
     const iat = Date.now() / 1000;
-    const user = new User({ username: "user1", validTokens: [iat, iat + 1] });
-    await User.create(user);
+    await User.create({ username: "user1", validTokens: [iat, iat + 1] });
 
     const where: WhereOptions = { where: { username: "user1" } };
     const found = await User.findOne(where);
@@ -28,8 +31,7 @@ describe("user", () => {
   });
 
   test("save user model", async () => {
-    const user = new User({ username: "user2" });
-    await user.save();
+    await User.create({ username: "user2" });
 
     const where: WhereOptions = { where: { username: "user2" } };
     const found = await User.findOne(where);
@@ -38,4 +40,17 @@ describe("user", () => {
     expect(found.username).toEqual("user2");
     expect(found.createdAt).toBeTruthy();
   });
+
+  test("save after build and update username should not throw", async () => {
+    const user = User.build({ username: "user3" });
+    user.username = "user4";
+    await expect(user.save()).resolves.toBeTruthy();
+  });
+
+  test("save after create and update username should throw", async () => {
+    const user = await User.create({ username: "user3" });
+    user.username = "user4";
+    await expect(user.save()).rejects.toThrow(/Validation/);
+  });
+
 });

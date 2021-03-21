@@ -9,11 +9,11 @@ declare namespace sequelize {
   }
 
   // Model has some useful fields that are not in the typing
-  export interface Model2 extends Model {
+  export type Model2 = Model & {
     id?: number;
-    _previousDataValues?: Model;
+    _previousDataValues?: POJO;
     associate?: () => void;
-  }
+  };
 }
 
 

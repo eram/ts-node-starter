@@ -44,6 +44,18 @@ describe("pojo tests", () => {
     const str = JSON.stringify(pojo, undefined, 1);
     expect(str).toEqual("{\n \"hello\": 0\n}");
   });
+
+  test("pojo stringify with bigint", () => {
+    const pojo = { hello: -20n };
+
+    const str = POJO.stringify(pojo, undefined, 1);
+    expect(str).toEqual("{\n \"hello\": \"-20n\"\n}");
+
+    const parsed = POJO.parse(str);
+    expect(typeof parsed).toEqual("object");
+    expect(typeof parsed.hello).toEqual("bigint");
+    expect(parsed.hello).toStrictEqual(-20n);
+  });
 });
 
 describe("rojo tests", () => {
@@ -67,6 +79,7 @@ describe("rojo tests", () => {
   test("rojo is frozen", () => {
 
     const p2 = ROJO("[]");
+    // @ts-expect-error
     expect(() => { p2.a = 1; }).toThrow();
   });
 });

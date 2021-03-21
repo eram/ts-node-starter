@@ -2,6 +2,7 @@ import { Dialect, Sequelize, Options } from "sequelize";
 import { assert, copyIn, error } from "../utils";
 import * as User from "./user.model";
 import * as KV from "./kv.model";
+import { addNoUpdateHook } from "./noupdate.hook";
 
 export { Sequelize, Options } from "sequelize";
 
@@ -32,6 +33,9 @@ export function initDb(opts?: Options) {
     assert(!!o.dialect, "Missing Sequelize config");
 
     sequelize = new Sequelize(o);
+
+    // add no-update attribute
+    addNoUpdateHook(sequelize);
 
     // intiinalize all models
     User.init(sequelize);

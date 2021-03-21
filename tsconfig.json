@@ -17,6 +17,7 @@
       "src/**/*",
       "*.config.js", 
       "src/**/index.js",
+      "public/**/*.js",
       "scripts/*.js",
       "scripts/*.ts", 
     ]

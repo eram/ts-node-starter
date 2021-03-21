@@ -8,6 +8,7 @@ import { Counter, Histogram, Meter, meter } from "../utils/apm";
 
 const httpErrors = Meter.instance("http.errors");
 const httpInPorgress = Counter.instance("http.inPorgress");
+const httpTotal = Counter.instance("http.total");
 const httpRequests = Meter.instance("http.requests");
 const httpLatency = Histogram.instance("http.latency");
 
@@ -77,6 +78,7 @@ export async function errorHandler(ctx: Koa.Context2, next: Koa.Next) {
   const start = Date.now();
   httpInPorgress.add();
   httpRequests.add();
+  httpTotal.add();
 
   try {
     await next();
