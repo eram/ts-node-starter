@@ -14,6 +14,7 @@ import { parseToken, requireAuthorization } from "../../middleware/authorization
 import { init as openApiDocs } from "../../middleware/openApiDocs";
 import { init as healthcheck } from "../../controllers/healthcheck";
 import { init as oauthGitHub } from "../../controllers/oauthGithub";
+import { init as tsSPA } from "../../middleware/tsSPA";
 import { Bridge } from "../../libs/cluster";
 import { corsOptions, helmetOptions } from "../../libs/secure";
 
@@ -48,6 +49,11 @@ export function setupKoa(koa: Koa, client: Bridge, db: Sequelize) {
 
   // setup public routes
   koa.use(staticSite("./public", "/"));
+
+  // setup single-page-application
+  koa.use(tsSPA("./src/spa", "/app"))
+    .use(staticSite("./src/spa", "/app"));
+
   publicRouter.use(parseToken);
   healthcheck(publicRouter, db, client);
   oauthGitHub(publicRouter);

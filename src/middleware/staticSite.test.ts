@@ -20,22 +20,35 @@ describe("static-site middleware", () => {
     const fn = init("./public", "/");
     expect(typeof fn).toEqual("function");
 
-    const ctx: Partial<Koa.Context2> = {
-      method: "GET",
-      path: "favicon.png",
-      set: () => { },
-      // @ts-expect-error
-      acceptsEncodings: () => ["deflate", "gzip"],
+    const getCtx = (path: string): Partial<Koa.Context2> => {
+      const ctx: Partial<Koa.Context2> = {
+        method: "GET",
+        path,
+        body: undefined,
+        set: () => { },
+        // @ts-expect-error
+        acceptsEncodings: (() => ["deflate", "gzip"]),
+      };
+
+      Object(ctx).response = {
+        get: () => "",
+      };
+      return ctx;
     };
 
-    Object(ctx).response = {
-      get: () => "",
-    };
+    const ctx1 = getCtx("favicon.ico");
+    const cb1 = jest.fn(async () => Promise.resolve());
+    await fn(ctx1 as Koa.Context2, cb1);
 
-    await fn(ctx as Koa.Context2, async () => Promise.resolve());
+    expect(ctx1.body).toBeInstanceOf(ReadStream);
+    expect(ctx1.body.readable).toBeTruthy();
+    expect(ctx1.type).toEqual(".ico");
+    expect(cb1).toHaveBeenCalledTimes(0);
 
-    expect(ctx.body).toBeInstanceOf(ReadStream);
-    expect(ctx.body.readable).toBeTruthy();
-    expect(ctx.type).toEqual(".png");
+    const ctx2 = getCtx("doesnt.exist.png");
+    await fn(ctx2 as Koa.Context2, cb1);
+    expect(ctx2.body).toBeUndefined();
+    expect(cb1).toHaveBeenCalledTimes(1);
+
   });
 });

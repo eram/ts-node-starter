@@ -31,7 +31,7 @@ spec:
         - name: ts-node-starter
           image: "{{image}}:{{version}}"
           ports:
-            - containerPort: 8104
+            - containerPort: 8080
           resources:
             limits:
               memory: 1Gi
@@ -56,7 +56,7 @@ spec:
           readinessProbe:
             httpGet:
               path: /_healthcheck
-              port: 8104
+              port: 8080
               scheme: HTTP
             initialDelaySeconds: 5
             periodSeconds: 10
@@ -65,7 +65,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /_healthcheck
-              port: 8104
+              port: 8080
               scheme: HTTP
             initialDelaySeconds: 10
             periodSeconds: 10

@@ -8,6 +8,6 @@ spec:
   selector:
     app: ts-node-starter
   ports:
-    - port: 8104
-      targetPort: 8104
+    - port: 8080
+      targetPort: 8080
       protocol: TCP

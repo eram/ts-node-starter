@@ -7,7 +7,7 @@ import { setupKoa } from "./setupKoa";
 import { env } from "../../utils";
 
 describe("setupKoa tests", () => {
-  it("Koa srv created", () => {
+  it("Koa srv created", async () => {
 
     // hack to get a bit more coverage
     process.env.NODE_ENV = "production";
@@ -20,10 +20,25 @@ describe("setupKoa tests", () => {
 
     // run a request thru the server
     const req = new IncomingMessage(new Socket());
-    req.url = "localhost:8080/";
+    req.url = "localhost:8080/nono";
     req.method = "GET";
     const resp = new ServerResponse(req);
-    srv.callback()(req, resp);
+    await srv.callback()(req, resp);
     expect(resp.statusCode).toEqual(404);
+  });
+
+  it("Koa srv tsCompile", async () => {
+
+    const srv = setupKoa(new Koa(), initClient(), initDb());
+    expect(srv.middleware.length).toBeGreaterThan(7);
+    expect(srv.listenerCount("")).toEqual(0);
+
+    // run a request thru the server
+    const req = new IncomingMessage(new Socket());
+    req.url = "localhost:8080/app/spa.ts";
+    req.method = "GET";
+    const resp = new ServerResponse(req);
+    await srv.callback()(req, resp);
+    expect(resp.statusCode).toEqual(200);
   });
 });

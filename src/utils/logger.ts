@@ -72,7 +72,9 @@ export class Logger {
     private _level: LogLevel,
     private readonly _logFn?: ILogFn) {
     if (!_logFn) {
-      const json = process.env.LOG_FORMAT === "json" || process.argv.includes("-json") || process.argv.includes("--json");
+      const { argv } = process;
+      const json = (process.env.LOG_FORMAT === "json" || argv.includes("-json") || argv.includes("--json"))
+      && !(argv.includes("-raw") || argv.includes("--raw"));
       this._logFn = json ? jsonLogger(module) : rawLogger(module);
     }
   }
