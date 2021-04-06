@@ -1,55 +1,54 @@
 import * as path from "path";
-import createHttpError from "http-errors";
-import { afs, error, info } from "../utils";
+import HttpErrors from "http-errors";
+import { info } from "../utils";
 import Koa from "../utils/koa";
-import { TsCompileOptions, prepare } from "./tsCompile";
+import { TsTranspileOptions, init as transpileInit, importContextQueryParam, transpile } from "../libs/tsTranspile";
 
-export function init(folder: string, mountpoint: string, options: TsCompileOptions = {}) {
+export function init(baseFolder: string, mountPoint: string, tsOptions?: TsTranspileOptions) {
 
-  // when code is inside a docker, it requers a re-deployment to change the code.
-  // when we debug we want the server to re-compile if the file has changed.
-  const reloadSupported = process.env.POD_NAMESPACE === "debug";
-  const { cache, transpiler } = prepare(options);
+  tsOptions ||= {
+    dirs: {
+      baseFolder,
+      mountPoint,
+      cwd: process.cwd(),
+    },
+  };
+  const config = transpileInit(tsOptions);
 
-  return async function spa(ctx: Koa.Context, next: Koa.Next) {
-    let source: string;
+  const importsHandler = async (ctx: Koa.Context, next: Koa.Next) => {
     const { path: pathname, originalUrl } = ctx;
+    const importContextQuery = ctx.query[importContextQueryParam] || "";
+    let source: string;
 
-    try {
+    if (importContextQuery || pathname.startsWith(mountPoint)) {
+
       const ext = path.extname(pathname);
-      if (pathname.startsWith(mountpoint)) {
-        if (!ext && ctx.get("redirect") !== "error" && ![mountpoint, `${mountpoint}/`].includes(pathname)) {
-          // this is a request to a page that is not the SPA entry page
-          info(`redirecting to SPA page: ${originalUrl}`);
-          const redirect = ctx.URL;
-          redirect.pathname = mountpoint;
-          return ctx.redirect(redirect.href);
 
-        } else if ((ext === ".ts" || ext === ".tsx") && (pathname.startsWith(mountpoint))) {
-          info(`tsCompile direct ts/tsx: ${originalUrl}`);
-          const file = path.join(process.cwd(), folder, pathname.substr(mountpoint.length));
-          let cachedValue = await cache.get(file);
-          const stats = reloadSupported ? await afs.stat(file) : { mtimeMs: 0 };
-          if (!cachedValue || cachedValue.timestamp < stats.mtimeMs) {
-            source = await transpiler(file);
-            cachedValue = { timestamp: stats.mtimeMs, source };
-            cache.set(file, cachedValue);
-          } else {
-            source = cachedValue.source;
-          }
-        }
+      // if this is a request to a page that is not the SPA entry page >> rediret to SPA
+      if (!ext && ctx.get("redirect") !== "error" && ![mountPoint, `${mountPoint}/`].includes(pathname)) {
+        info(`redirecting to SPA page: ${originalUrl}`);
+        const redirect = ctx.URL;
+        redirect.pathname = mountPoint;
+        ctx.redirect(redirect.href);
+        return;
       }
 
-      if (source) {
-        ctx.body = source;
-        ctx.type = ".js";
-        ctx.set("Content-Type", "text/javascript; charset=UTF-8");
-      } else {
-        await next();
+      // transpile typescript or call next if the file is not found
+      try {
+        source = await transpile(ctx.URL, config);
+      } catch (e) {
+        if (e.code !== "ENOENT" && !e.message.includes("ENOENT")) throw new HttpErrors.InternalServerError(e);
       }
-    } catch (e) {
-      error(`tsCompile error ${pathname}:`, e);
-      throw (e.code === "ENOENT") ? new createHttpError.NotFound(`no such file: ${originalUrl}`) : new Koa.HttpError(e);
+    }
+
+    if (source) {
+      ctx.body = source;
+      ctx.type = ".js";
+      ctx.set("Content-Type", "application/javascript; charset=UTF-8");
+    } else {
+      await next();
     }
   };
+
+  return importsHandler;
 }
