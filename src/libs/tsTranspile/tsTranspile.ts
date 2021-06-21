@@ -18,7 +18,7 @@ import * as path from "path";
 import * as fs from "fs";
 import { afs, assert, error, info } from "../../utils";
 import { createResolver, ResolveOptions } from "./resolver";
-import { createImportsTransformer, importContextQueryParam } from "./importsTransformer";
+import { createImportsTransformer, contextParam, ctxVerify } from "./importsTransformer";
 
 
 interface CachedValue {
@@ -55,10 +55,9 @@ export interface TsTranspileOptions {
 }
 
 const defaultCompilerOptions: CompilerOptions = {
-  module: ModuleKind.ES2015,    // TODO: take lower
-  target: ScriptTarget.ES2016,
+  module: ModuleKind.ES2015,
+  target: ScriptTarget.ES2015,
   sourceMap: false,
-
   emitDecoratorMetadata: true,
   experimentalDecorators: true,
   lib: ["dom"],
@@ -118,7 +117,7 @@ export function init(opts: TsTranspileOptions): Required<TsTranspileOptions> {
       transformers: {
         after: [
           ...config.transformers,
-          createImportsTransformer(config.dirs.cwd, resolver, filename, config.preloadList),
+          createImportsTransformer(config.dirs, resolver, filename, config.preloadList),
         ],
       },
     };
@@ -152,25 +151,26 @@ export async function transpile(url: URL, config: TsTranspileOptions) {
     };
 
     const ext = path.extname(pathname);
-    const importContextQuery = searchParams.get(importContextQueryParam) || "";
+    const importContextQuery = searchParams.get(contextParam) || "";
     config.preloadList.length = 0;
 
     // transpile typescript
     if (importContextQuery && config.resolve.extensions.includes(ext)) {
-      // TODO: by adding '__mi_ctx' to an import the client is practically able to get to anywhere
-      // in your code and your node_modules. this is a serious security risk. you need to sign the
-      // preloadList URLs to make sure they are not mended by the client.
+      const ctx = ctxVerify(importContextQuery);
       info(`tsTranspile moduleImport/extension match: ${pathname}`);
-      source = await sourceProvider(`${importContextQuery}${pathname}`);
+      source = await sourceProvider(`${ctx}${pathname}`);
     } else if ([".ts", ".tsx"].includes(ext)) {
       info(`tsTranspile direct ts/tsx: ${pathname}`);
       const filename = path.join(config.dirs.cwd, config.dirs.baseFolder, pathname.substr(config.dirs.mountPoint.length));
       source = await sourceProvider(filename);
     }
 
-    const preload = config.preloadList.reduce((r, i) => `${r}document.write("<link rel='module-preload' href='${i}'/>");\n`, "");
+    /*
+    const preload = config.preloadList.reduce(
+      (r, i) => `${r}document.write("<link rel='module-preload' href='${i}'/>");\n`, "");
+    const preload = config.preloadList.reduce((r, i) => `${r}loadScript("${i}");\n`, "");
     source = preload + source;
-
+    */
   } catch (e) {
     error(`tsTranspile error ${pathname}:`, e);
     throw new Error(e);

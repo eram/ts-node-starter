@@ -1,6 +1,6 @@
 import * as path from "path";
 import { initDb } from "../../models";
-import { env, getLogger, LogLevel, atTerminate } from "../../utils";
+import { env, createLogger, LogLevel, atTerminate } from "../../utils";
 
 async function main() {
 
@@ -9,7 +9,7 @@ async function main() {
 
   env.reload();
   const jobName = path.basename(__dirname);
-  const log = getLogger(jobName, LogLevel.info);
+  const log = createLogger(jobName, LogLevel.info);
 
   atTerminate(() => { log.info("job terminated"); });
 

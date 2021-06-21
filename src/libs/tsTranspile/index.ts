@@ -3,4 +3,4 @@
 // https://github.com/majo44/express-typescript-compile
 //
 export { TsTranspileOptions, init, transpile } from "./tsTranspile";
-export { importContextQueryParam } from "./importsTransformer";
+export { contextParam } from "./importsTransformer";

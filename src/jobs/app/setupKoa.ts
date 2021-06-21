@@ -7,7 +7,7 @@ import createRouter from "koa-joi-router";
 import { userAgent } from "koa-useragent";
 import { Sequelize } from "sequelize";
 import Koa from "../../utils/koa";
-import { env, getLogger, info, LogLevel } from "../../utils";
+import { env, createLogger, info, LogLevel } from "../../utils";
 import { errorHandler, koaOnError, setWarnRespTime } from "../../middleware/errorHandler";
 import { init as staticSite } from "../../middleware/staticSite";
 import { parseToken, requireAuthorization } from "../../middleware/authorization";
@@ -22,7 +22,7 @@ import { corsOptions, helmetOptions } from "../../libs/secure";
 export function setupKoa(koa: Koa, client: Bridge, db: Sequelize) {
 
   const { ROUTER_BASE_PATH, NODE_ENV } = process.env;
-  const httpLogger = getLogger("http", LogLevel.info);
+  const httpLogger = createLogger("http", LogLevel.info);
 
   // set app middleware
   koa.on("error", koaOnError)

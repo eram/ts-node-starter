@@ -13,9 +13,26 @@ import {
 } from "typescript";
 
 import * as path from "path";
+import * as jsonwebtoken from "jsonwebtoken";
 import { Resolver } from "./resolver";
+import { warn } from "../../utils";
 
-export const importContextQueryParam = "__mi_ctx";
+export const contextParam = "__mi_ctx";
+const tokenKey = `${contextParam}9876`;
+const expiresIn = "1d";
+
+export const ctxSign = (ctx: string) => jsonwebtoken.sign(ctx, tokenKey, { expiresIn });
+
+export const ctxVerify = (enc: string) => {
+  let ctx = "";
+  try {
+    ctx = String(jsonwebtoken.verify(enc, tokenKey));
+  } catch (e) {
+    // log the err and return the empty string. this would result with a 404
+    warn("[importsTransformer] invalid context from client:", enc);
+  }
+  return ctx;
+};
 
 /**
  * Create source code transformer
@@ -25,17 +42,21 @@ export const importContextQueryParam = "__mi_ctx";
  * @param file - target file
  * @param preloadList - list modules to preload
  */
+// eslint-disable-next-line sonarjs/cognitive-complexity
 export function createImportsTransformer(
-  cwd: string,
+  dirs: { baseFolder: string; mountPoint: string; cwd?: string; },
   resolve: Resolver,
   file: string,
   preloadList: Array<string>): TransformerFactory<SourceFile> {
 
-  /**
-   * Creates import url.
-   * @param target - for the dependency
-   */
-  const getUrl = (target: string): string => {
+  const { cwd } = dirs;
+  let { baseFolder, mountPoint } = dirs;
+  baseFolder = baseFolder.startsWith("./") ? baseFolder.substr(2) : baseFolder;
+  baseFolder = baseFolder.startsWith("/") ? baseFolder.substr(1) : baseFolder;
+  mountPoint = mountPoint.startsWith("./") ? mountPoint.substr(2) : mountPoint;
+  mountPoint = mountPoint.startsWith("/") ? mountPoint.substr(1) : mountPoint;
+
+  function getUrl(target: string): string {
     let url: string;
     const resolution = resolve(file, target);
     if (resolution.isUrl) {
@@ -48,13 +69,20 @@ export function createImportsTransformer(
         context += "../";
         resolved = resolved.substr(3);
       }
-      url = `/${resolved}?${context ? `&${importContextQueryParam}=${context}` : ""}`;
+      if (resolved.startsWith(baseFolder)) {
+        resolved = mountPoint + resolved.substr(baseFolder.length);
+      }
+
+      // the context is added to the link that the client gets so it must be signed to
+      // prevent the client from changing it and gaining access to any location.
+      const token = context ? `?${contextParam}=${ctxSign(context)}` : "";
+      url = `/${resolved}${token}`;
     }
     if (preloadList.indexOf(url) < 0) {
       preloadList.push(url);
     }
     return url;
-  };
+  }
 
   return (context: TransformationContext) => {
     // creates visitor
@@ -97,3 +125,4 @@ export function createImportsTransformer(
     return <T extends Node>(node: T) => visitEachChild(node, visitor, context);
   };
 }
+

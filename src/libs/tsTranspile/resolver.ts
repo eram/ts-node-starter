@@ -8,7 +8,7 @@ import type { ResolveOptions as ResolverResolveOptions } from "enhanced-resolve"
 import fs from "fs";
 import * as path from "path";
 import { CompilerOptions, createCompilerHost, Extension, nodeModuleNameResolver } from "typescript";
-import { debug, error } from "../../utils";
+import { debug, error, info } from "../../utils";
 
 /**
  * Options for node resolver.
@@ -97,7 +97,7 @@ export function createResolver(
   compilerOptions: CompilerOptions,
   options: Partial<ResolveOptions>): Resolver {
 
-  debug("create resolver with options:", options);
+  info("create resolver with options:", options);
 
   /**
    * Prepare compiler host.
@@ -139,7 +139,7 @@ export function createResolver(
   };
 
   return (context: string, target: string): Resolution => {
-    const prefix = `resolve '${target}' @ '${context} >>`;
+    const prefix = `resolve '${target}' @ '${path.basename(context)} >>`;
 
     // is a absolute url
     const urlAlias = checkAliasForUrl(target);

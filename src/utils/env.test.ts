@@ -18,6 +18,7 @@ describe("env", () => {
     delete process.env.HOSTNAME;
     delete process.env.LOG_ADD_TIME;
     delete process.env.LOG_LEVEL;
+    delete process.env.LOG_FORMAT;
     env.reload();
     Object.assign(process.env, save);
   });

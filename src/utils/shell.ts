@@ -1,4 +1,6 @@
-
+//
+// Some shell API wrappers stdio prompt and running commands
+//
 import { exec } from "child_process";
 import readline from "readline";
 import { CustomError, errno } from "./customError";

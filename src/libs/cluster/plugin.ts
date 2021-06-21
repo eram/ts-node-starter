@@ -1,5 +1,5 @@
 import { Sequelize } from "../../models";
-import { copyIn, getLogger } from "../../utils";
+import { copyIn, createLogger } from "../../utils";
 import { Bridge } from "./bridge";
 
 
@@ -7,7 +7,7 @@ export const plugins = new Array<PluginBase>();
 
 export class PluginParams {
   readonly name = this.constructor.name;
-  readonly logger = getLogger(this.name, getLogger().level);
+  readonly logger = createLogger(this.name, createLogger().level);
   readonly db?: Sequelize;
   readonly bridge?: Bridge;
 }

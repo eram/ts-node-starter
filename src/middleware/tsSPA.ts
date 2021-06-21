@@ -2,7 +2,7 @@ import * as path from "path";
 import HttpErrors from "http-errors";
 import { info } from "../utils";
 import Koa from "../utils/koa";
-import { TsTranspileOptions, init as transpileInit, importContextQueryParam, transpile } from "../libs/tsTranspile";
+import { TsTranspileOptions, init as transpileInit, contextParam, transpile } from "../libs/tsTranspile";
 
 export function init(baseFolder: string, mountPoint: string, tsOptions?: TsTranspileOptions) {
 
@@ -17,7 +17,7 @@ export function init(baseFolder: string, mountPoint: string, tsOptions?: TsTrans
 
   const importsHandler = async (ctx: Koa.Context, next: Koa.Next) => {
     const { path: pathname, originalUrl } = ctx;
-    const importContextQuery = ctx.query[importContextQueryParam] || "";
+    const importContextQuery = ctx.query[contextParam] || "";
     let source: string;
 
     if (importContextQuery || pathname.startsWith(mountPoint)) {

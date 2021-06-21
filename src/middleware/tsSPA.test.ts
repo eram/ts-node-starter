@@ -5,12 +5,9 @@ import { init } from "./tsSPA";
 const baseFolder = "src/libs/tsTranspile/__mocks__";
 const mountPoint = "/mp";
 const files = {
-  noImports: "noImports.ts",
   validImports: "validImports.ts",
-  invalidImports: "invalidImports.ts",
-  transpileError: "transpileError.ts",
   ENOENT: "notFound.ts",
-  nonTs: "nonTs.png",
+  nonTs: "favicon.ico",
 };
 
 function getCtx(fn: string): Partial<Koa.Context2> {
@@ -31,23 +28,7 @@ function getCtx(fn: string): Partial<Koa.Context2> {
   };
 }
 
-describe("tsTranspile functionality", () => {
-
-  test("transpile file with no-imports should succeed", async () => {
-    const fn = init(baseFolder, mountPoint);
-    const ctx = getCtx(files.noImports);
-
-    await fn(ctx as Koa.Context2, () => Promise.resolve());
-
-    expect(ctx.type).toEqual(".js");
-    expect(typeof ctx.body).toEqual("string");
-    expect(ctx.body.startsWith("/* istanbul")).toBeTruthy();
-
-    // 2nd time to read from cache
-    const ctx2 = getCtx(files.noImports);
-    await fn(ctx2 as Koa.Context2, () => Promise.resolve());
-    expect(ctx2.type).toEqual(".js");
-  });
+describe("spa middleware functionality", () => {
 
   test("transpile file with imports should succeed", async () => {
     const fn = init(baseFolder, mountPoint);
@@ -57,25 +38,7 @@ describe("tsTranspile functionality", () => {
 
     expect(ctx.type).toEqual(".js");
     expect(typeof ctx.body).toEqual("string");
-    expect(ctx.body.startsWith("document.write")).toBeTruthy();
-  });
-
-  test("transpile file with invalid-imports should throw", async () => {
-    const fn = init(baseFolder, mountPoint);
-    const ctx = getCtx(files.invalidImports);
-
-    await expect(
-      fn(ctx as Koa.Context2, () => Promise.resolve()),
-    ).rejects.toThrow();
-  });
-
-  test("transpile file with invalid code should throw", async () => {
-    const fn = init(baseFolder, mountPoint);
-    const ctx = getCtx(files.transpileError);
-
-    await expect(
-      fn(ctx as Koa.Context2, () => Promise.resolve()),
-    ).rejects.toThrow();
+    expect(ctx.body.startsWith("/* istanbul ")).toBeTruthy();
   });
 
   test("transpile ENOENT ts file should call next", async () => {
@@ -86,30 +49,24 @@ describe("tsTranspile functionality", () => {
     await fn(ctx as Koa.Context2, next);
     expect(next).toHaveBeenCalledTimes(1);
   });
-});
 
-describe("spa middleware functionality", () => {
   test("request to non-ts file should call next", async () => {
     const fn = init(baseFolder, mountPoint);
-    const ctx = getCtx(files.validImports);
+    const ctx = getCtx(files.nonTs);
     const cb = jest.fn(async () => sleep(0));
-
-    await fn(ctx as Koa.Context2, cb);
-
-    expect(ctx.type).toEqual(".js");
     expect(cb).toHaveBeenCalledTimes(0);
-
-    // 2nd time with none-ts file >> should call next callback
-    const ctx2 = getCtx(files.nonTs);
-    await fn(ctx2 as Koa.Context2, cb);
+    await fn(ctx as Koa.Context2, cb);
     expect(cb).toHaveBeenCalledTimes(1);
   });
 
   test("should redirect from internal page to SPA page", async () => {
-
     const redirected = new URL("file://");
     const fn = init(baseFolder, mountPoint);
-    const ctx = Object.assign(getCtx("inspa/inspa"), { redirect: jest.fn((_href: string) => { redirected.href = _href; }) });
+    const ctx = Object.assign(getCtx("inspa/inspa"), {
+      redirect: jest.fn((_href: string) => {
+        redirected.href = _href;
+      }),
+    });
 
     await fn(ctx as Koa.Context2, () => Promise.resolve());
 

@@ -1,6 +1,6 @@
 import { copyIn, merge } from "./copyIn";
 
-test("copyIn throw on iteratable", () => {
+test("copyIn throws on iteratable", () => {
 
   const source1 = new Set(["test", 1]);
   const source2 = new Set(["test2", 5]);

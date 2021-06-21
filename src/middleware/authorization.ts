@@ -113,6 +113,11 @@ export async function afterLogin(ctx: Koa.Context2, username: string) {
   return claims;
 }
 
+export interface IRefreshBody {
+  user: string;
+  token: string;
+  expires: number;
+}
 
 export async function refresh(ctx: Koa.Context) {
 
@@ -120,6 +125,12 @@ export async function refresh(ctx: Koa.Context) {
   const username = ctx.state.user;
   const token = signToken({ user: username });
   const claims = verifyToken(token);
+
+  const body: IRefreshBody = {
+    user: ctx.state.user,
+    token,
+    expires: claims.exp * 1000,
+  };
 
   // replace valid token in db and cleanup expired tokens
   const user = await User.findOne({ where: { username } });
@@ -134,9 +145,9 @@ export async function refresh(ctx: Koa.Context) {
   ctx.cookies.set("token", token, cookieOptions(claims.exp * 1000));
 
   // respond with the new token so it can be used to access other servers on the same cluster
-  ctx.body = { token, user: username, expires: claims.exp * 1000 };
   ctx.status = 200;
   ctx.type = "json";
+  ctx.body = body;
 }
 
 

@@ -1,5 +1,7 @@
 /* eslint-disable no-restricted-globals */
-// import { URLS_TO_PREFETCH } from "./prefetch";
+
+// import not supported is service worker
+self.importScripts("./prefetch.ts");
 
 (() => {
   const debug = self.location.hostname === "localhost" || self.location.search.indexOf("debug=true") > 0;
@@ -8,24 +10,11 @@
 
   const SHELL_PATH = "/app";
   const SHELL_ROOT = `^${SHELL_PATH}\\/.*`;
-  const CACHE_NAME = "cache-v1";
+  const CACHE_NAME = "app-pages-v1";
   const CACHE_ALLOW_LIST = [CACHE_NAME];
 
-  const URLS_TO_PREFETCH = [
-    "/favicon.ico",
-    "",
-    "index.html",
-    "spa.ts",
-    "about/about.html",
-    "about/about.ts",
-    "app/app.html",
-    "app/app.ts",
-    //  "/styles/main.css",
-    //  "/script/main.js",
-  ];
-
   // deleting any caches that aren"t defined in the cache allowlist
-  self.addEventListener("activate", (event) => {
+  self.addEventListener("activate", (event: ExtendableEvent) => {
     try {
       event.waitUntil(
         caches.keys().then(cacheNames => Promise.all(
@@ -40,10 +29,9 @@
 
 
   // install and pre-cache the initial urls
-  self.addEventListener("install", (_event) => {
+  self.addEventListener("install", (_event: ExtendableEvent) => {
     try {
       // The promise that skipWaiting() returns can be safely ignored.
-      // @ts-expect-error
       void self.skipWaiting();
 
       // Perform any other actions required for your
@@ -51,7 +39,7 @@
       void caches.open(CACHE_NAME)
         .then(cache => {
           info("opened cache");
-          return cache.addAll(URLS_TO_PREFETCH.map(url => {
+          cache.addAll(URLS_TO_PREFETCH.map(url => {
             info("prefetching:", url);
             return new Request(url, { mode: "no-cors" });
           }))
@@ -69,15 +57,15 @@
   const isShellNavigate = (pathname: string) => (!!shellRoot.exec(pathname));
 
   // fetch from cache or from th enetwork then cache the response
-  self.addEventListener("fetch", event => {
+  self.addEventListener("fetch", (event: FetchEvent) => {
     try {
       // we need to clone request but it's prperties are propertyIsEnumerable=false
       // so both object.assign() and request.clone() cannot be used here. i have to reconstruct it...
       const { body, cache, credentials, headers, integrity, keepalive, method, mode,
-        redirect, referrer, referrerPolicy, signal, url, window } = event.request;
+        redirect, referrer, referrerPolicy, signal, url } = event.request;
       const reqInfo = {
         body, cache, credentials, headers, integrity, keepalive, method, mode,
-        redirect, referrer, referrerPolicy, signal, url, window,
+        redirect, referrer, referrerPolicy, signal, url,
       };
 
       // Always respond to navigations with the shell page
@@ -118,6 +106,8 @@
               .then(cache2 => cache2.put(resp2.url, responseToCache));
 
             return resp2;
+          }).catch(reason => {
+            error(reason);
           });
         }));
     } catch (e) {

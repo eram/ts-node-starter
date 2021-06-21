@@ -2,7 +2,7 @@ import * as path from "path";
 import cluster from "cluster";
 import * as os from "os";
 import { initMaster } from "./master";
-import { apm, assert, error, getLogger, info, ROJO } from "../../utils";
+import { apm, assert, error, createLogger, info, ROJO } from "../../utils";
 import { LocalMaster } from "./localMaster";
 import { Bridge, Packet, PktData } from "./bridge";
 import { InitPluginFn } from "./plugin";
@@ -35,7 +35,7 @@ export function initClient(): Bridge {
       id: cluster.worker.id,
       send: (packat: Packet) => process.send(packat), // send to cluster
       onPkt: (cb: (packet: Packet) => void) => process.on("message", cb),
-    }, getLogger());
+    }, createLogger());
 
   } else {
 

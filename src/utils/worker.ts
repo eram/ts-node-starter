@@ -1,11 +1,11 @@
-import { Worker as JsWorker } from "worker_threads";
-import { merge } from "./copyIn";
-import { POJO } from "./pojo";
-
 //
+// Worker threa module
 // this is a small hack to allow running workers under ts-node
 // based on https://stackoverflow.com/questions/52955197/how-to-use-webworker-with-ts-node-without-webpack
 //
+import { Worker as JsWorker } from "worker_threads";
+import { merge } from "./copyIn";
+import { POJO } from "./pojo";
 
 export class Worker extends JsWorker {
   constructor(file: string, wkOpts: WorkerOptions & { workerData?: POJO }) {
