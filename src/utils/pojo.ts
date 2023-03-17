@@ -7,6 +7,13 @@
 //
 export interface IDictionary<T = string> { [key: string]: T }
 export type Immutable<T> = { readonly [P in keyof T]: T[P] };
+export type Union<T> = {    /* see https://www.steveruiz.me/posts/smooshed-object-union */
+  [K in T extends infer P ? keyof P : never]: T extends infer P
+    ? K extends keyof P
+      ? P[K] : never
+    : never
+};
+
 
 // like JSON.stringify but adds suppport for bigint
 function stringify(
