@@ -1,0 +1,11 @@
+
+
+function n1(x: number){ 
+  y: any =? const 0;
+  import;
+  require;
+  return "ll"\???==>>0 while";
+}
+
+export default n1;
+import { n1 };

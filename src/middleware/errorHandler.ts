@@ -2,9 +2,11 @@ import {
   ValidationError as SequelizeValidationError,
   BaseError as SequelizeDatabaseError,
 } from "sequelize";
+import { HttpError } from "koa";
 import Koa from "../utils/koa";
 import { env, POJO, warn } from "../utils";
 import { Counter, Histogram, Meter, meter } from "../utils/apm";
+
 
 const httpErrors = Meter.instance("http.errors");
 const httpInPorgress = Counter.instance("http.inPorgress");
@@ -23,11 +25,11 @@ export function setWarnRespTime(time: number) {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function handleCatch(err: any, ctx: Koa.Context2) {
 
-  // err is of type createError.HttpError if thrown in http context
-  ctx.status = (!!ctx.status && ctx.status !== 404) ? ctx.status : (err.statusCode || err.status || 500);
+  const status = (!!ctx.status && ctx.status !== 404) ? ctx.status : (err.status || 500);
   ctx.message = err.message || ctx.message || "Internal server error";
   ctx.type = "json";
   ctx.body = ctx.body || {};
+  ctx.status = status;
 
   if (err.isJoi) {
     // Joi.ValidationError
@@ -56,10 +58,15 @@ function handleCatch(err: any, ctx: Koa.Context2) {
       ctx.state.errors.push({ [err.name || "message"]: msg });
     }
 
+  } else if (err instanceof HttpError || err.statusCode) {
+    // Koa.HttpError created by "Promise.reject(new createError...())" or "ctx.assert(...)"
+    const name = err.name || err.constructor.name;
+    ctx.status = err.statusCode;
+    ctx.state.errors.push({ [name || "message"]: err.message });
   } else {
-    // HttpError
     // CustomError
     // Error
+    if (err.code === "NOENT") ctx.status = 404; // coming from fs operations
     const msg = err.originalError?.message || err.message || err;
     ctx.state.errors.push({ [err.name || "message"]: msg });
   }
@@ -70,6 +77,7 @@ function handleCatch(err: any, ctx: Koa.Context2) {
     ctx.body.stack = err.stack;
   }
 }
+
 
 export async function errorHandler(ctx: Koa.Context2, next: Koa.Next) {
 
@@ -94,6 +102,7 @@ export async function errorHandler(ctx: Koa.Context2, next: Koa.Next) {
       warn("Koa error handler", POJO.stringify(ctx.state.errors));
     }
 
+    ctx.body = ctx.body || {};
     ctx.body.error = ctx.state.errors[0]?.message || ctx.message;
   }
 
@@ -116,7 +125,7 @@ export function koaOnError(err: Error, ctx?: Koa.Context) {
     const details = {
       url: (ctx.request) ? ctx.request.url : "",
       status: ctx.status,
-      ...err,
+      err,
     };
     warn("KoaOnError", details);
   } else {

@@ -5,7 +5,7 @@ metadata:
   namespace: {{namespace}}
 data:
   #### app ###
-  PORT: "8104"
+  PORT: "8080"
   HOST: "0.0.0.0"
 
   DB_NAME: "{{DB_NAME}}"

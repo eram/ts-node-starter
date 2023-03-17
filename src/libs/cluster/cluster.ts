@@ -4,13 +4,13 @@
 import cluster from "cluster";
 import * as fs from "fs";
 import path from "path";
-import { apm, AsyncArray, atTerminate, count, Counter, env, errno, getLogger, Histogram, LogLevel, Meter, POJO } from "../../utils";
+import { apm, AsyncArray, atTerminate, count, Counter, env, errno, createLogger, Histogram, LogLevel, Meter, POJO } from "../../utils";
 import { Bridge, BridgeError, Packet, PktData, PKT_TOPIC } from "./bridge";
 import { initMaster } from "./master";
 import { WorkerConf, WorkerInfo, WorkerState } from "./workerConf";
 
 
-const logger = getLogger("Cluster", LogLevel.info);
+const logger = createLogger("Cluster", LogLevel.info);
 const info = logger.info.bind(logger);
 const warn = logger.warn.bind(logger);
 const error = logger.error.bind(logger);

@@ -1,47 +1,45 @@
-/*
- * StateMachine.ts
- * TypeScript finite state machine class with async transformations using promises.
- */
+//
+// State Machine module
+// TypeScript finite state machine class with async transformations.
+//
 
-export interface ITransition<STATE, EVENT> {
+type TCB = (...args: unknown[]) => Promise<void>;
+
+export type Transition<STATE, EVENT> = {
   fromState: STATE;
   event: EVENT;
   toState: STATE;
-  cb?: (...args: unknown[]) => Promise<void>;
-}
-
-export function tFrom<STATE, EVENT>(
-  fromState: STATE, event: EVENT, toState: STATE,
-  cb?: (...args: unknown[]) => Promise<void>): ITransition<STATE, EVENT> {
-  return { fromState, event, toState, cb };
-}
+  cb?: TCB;
+};
 
 export class StateMachine<STATE, EVENT> {
 
-  protected current: STATE;
-
   // initalize the state-machine
   constructor(
-    initState: STATE,
-    protected transitions: ITransition<STATE, EVENT>[] = [],
-  ) {
-    this.current = initState;
+    protected _state: STATE,
+    protected _ts: Transition<STATE, EVENT>[] = [],
+  ) {}
+
+  addTransitions(transitions: Transition<STATE, EVENT>[]) {
+    this._ts.push(...transitions);
+    return this;
   }
 
-  addTransitions(transitions: ITransition<STATE, EVENT>[]): void {
-    transitions.forEach((tran) => this.transitions.push(tran));
+  add(fromState: STATE, event: EVENT, toState: STATE, cb?: TCB) {
+    this._ts.push({ fromState, event, toState, cb });
+    return this;
   }
 
-  getState(): STATE { return this.current; }
+  get state() { return this._state; }
 
   can(event: EVENT): boolean {
-    return this.transitions.some((trans) => (trans.fromState === this.current && trans.event === event));
+    return this._ts.some((trans) => (trans.fromState === this._state && trans.event === event));
   }
 
   isFinal(): boolean {
     // search for a transition that starts from current state.
     // if none is found it's a terminal state.
-    return this.transitions.every((trans) => (trans.fromState !== this.current));
+    return this._ts.every((trans) => (trans.fromState !== this._state));
   }
 
   // post event asynch
@@ -49,15 +47,15 @@ export class StateMachine<STATE, EVENT> {
     return new Promise<void>((resolve, reject) => {
 
       // delay execution to make it async
-      setTimeout((me: this) => {
+      setImmediate(() => {
 
         // find transition
-        const found = this.transitions.some((tran) => {
-          if (tran.fromState === me.current && tran.event === event) {
-            me.current = tran.toState;
-            if (tran.cb) {
+        const found = this._ts.some(t => {
+          if (t.fromState === this._state && t.event === event) {
+            this._state = t.toState;
+            if (t.cb) {
               try {
-                tran.cb(args)
+                t.cb(args)
                   .then(resolve)
                   .catch(reject);
               } catch (e: unknown) {
@@ -74,10 +72,10 @@ export class StateMachine<STATE, EVENT> {
 
         // no such transition
         if (!found) {
-          console.error(`no transition: from ${me.current.toString()} event ${event.toString()}`);
+          console.error(`no transition: from ${this._state.toString()} event ${event.toString()}`);
           reject();
         }
-      }, 0, this);
+      });
     });
   }
 }

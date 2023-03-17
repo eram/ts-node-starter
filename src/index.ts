@@ -1,7 +1,7 @@
 import * as path from "path";
 import cluster from "cluster";
 import * as Command from "commander";
-import { env, errno, error, afs, assert } from "./utils";
+import { env, errno, error, afs, assert, atTerminate } from "./utils";
 import { clusterStart } from "./libs/cluster";
 import { initDb, User } from "./models";
 
@@ -14,6 +14,7 @@ process.stdin.setEncoding("utf8");
 process.stdout.setEncoding("utf8");
 
 const cmd = new Command.Command(pkg.name);
+atTerminate(() => error);
 
 async function reloadEnv() {
   const opts = cmd.opts();

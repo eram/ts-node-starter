@@ -1,7 +1,19 @@
-
-/* es lint-disable @typescript-eslint/no-explicit-any */
+//
+// POJO - Plain old javascript object module
+// - IDictionary interface: similar to C#'s IDictionary it can also replace 'any' in your code.
+// - POJO is much like JSON -  it adds support for bigint and better typings.
+// - ROJO - readonly version of POJO to support immutable operations
+// - toPOJO() - one step to-plain-object to convert complex objects into plain JSON
+//
 export interface IDictionary<T = string> { [key: string]: T }
 export type Immutable<T> = { readonly [P in keyof T]: T[P] };
+export type Union<T> = {    /* see https://www.steveruiz.me/posts/smooshed-object-union */
+  [K in T extends infer P ? keyof P : never]: T extends infer P
+    ? K extends keyof P
+      ? P[K] : never
+    : never
+};
+
 
 // like JSON.stringify but adds suppport for bigint
 function stringify(

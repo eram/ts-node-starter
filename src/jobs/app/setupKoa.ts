@@ -7,13 +7,14 @@ import createRouter from "koa-joi-router";
 import { userAgent } from "koa-useragent";
 import { Sequelize } from "sequelize";
 import Koa from "../../utils/koa";
-import { env, getLogger, info, LogLevel } from "../../utils";
+import { env, createLogger, info, LogLevel } from "../../utils";
 import { errorHandler, koaOnError, setWarnRespTime } from "../../middleware/errorHandler";
 import { init as staticSite } from "../../middleware/staticSite";
 import { parseToken, requireAuthorization } from "../../middleware/authorization";
 import { init as openApiDocs } from "../../middleware/openApiDocs";
 import { init as healthcheck } from "../../controllers/healthcheck";
 import { init as oauthGitHub } from "../../controllers/oauthGithub";
+import { init as tsSPA } from "../../middleware/tsSPA";
 import { Bridge } from "../../libs/cluster";
 import { corsOptions, helmetOptions } from "../../libs/secure";
 
@@ -21,7 +22,7 @@ import { corsOptions, helmetOptions } from "../../libs/secure";
 export function setupKoa(koa: Koa, client: Bridge, db: Sequelize) {
 
   const { ROUTER_BASE_PATH, NODE_ENV } = process.env;
-  const httpLogger = getLogger("http", LogLevel.info);
+  const httpLogger = createLogger("http", LogLevel.info);
 
   // set app middleware
   koa.on("error", koaOnError)
@@ -48,6 +49,11 @@ export function setupKoa(koa: Koa, client: Bridge, db: Sequelize) {
 
   // setup public routes
   koa.use(staticSite("./public", "/"));
+
+  // setup single-page-application
+  koa.use(tsSPA("./src/spa", "/app"))
+    .use(staticSite("./src/spa", "/app"));
+
   publicRouter.use(parseToken);
   healthcheck(publicRouter, db, client);
   oauthGitHub(publicRouter);

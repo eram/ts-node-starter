@@ -1,5 +1,5 @@
 import { EventEmitter } from "events";
-import { apm, getLogger } from "../../utils";
+import { apm, createLogger } from "../../utils";
 import { Bridge, BridgeError, Packet, PktData } from "./bridge";
 
 // when running the client not in a cluster worker, initialize a local master that is
@@ -13,7 +13,7 @@ export class LocalMaster {
 
   constructor() {
 
-    const logger = getLogger("LocalMaster");
+    const logger = createLogger("LocalMaster");
     this._bus = new EventEmitter();
     this._bus.on("error", logger.error.bind(logger));
 
@@ -52,7 +52,7 @@ export class LocalMaster {
         setImmediate((pkt) => this._bus.emit("master", pkt), packet);
       },
       onPkt: (cb: (packet: Packet) => void) => this._bus.on("clnt", cb),
-    }, getLogger());
+    }, createLogger());
   }
 
   static apmHandler(data: PktData, reply: (data: PktData) => void) {

@@ -12,6 +12,7 @@
       "resolveJsonModule": true,
       "typeRoots": ["./node_modules/@types", "./src/types"],      
       "noImplicitAny": true,
+      "forceConsistentCasingInFileNames": true,
     },
     "include": [
       "src/**/*",

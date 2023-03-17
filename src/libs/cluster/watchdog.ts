@@ -2,13 +2,13 @@
 // testing cluster functionality is out of scope for this project.
 
 import cluster from "cluster";
-import { getLogger, LogLevel, assert, env, atTerminate } from "../../utils";
+import { createLogger, LogLevel, assert, env, atTerminate } from "../../utils";
 import { initClient } from "./client";
 import { system } from "../../utils/shell";
 
 process.stdin.setEncoding("utf8");
 process.stdout.setEncoding("utf8");
-const log = getLogger("Watchdog", LogLevel.info);
+const log = createLogger("Watchdog", LogLevel.info);
 const WD_TIMEOUT_RESTART = Number(process.env.WD_TIMEOUT_RESTART) || 10_000;
 const WD_MAX_MEMORY_RESTART = Number(process.env.WD_MAX_MEMORY_RESTART) || 10_000;
 

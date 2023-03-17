@@ -1,5 +1,5 @@
 import * as path from "path";
-import { env, getLogger, LogLevel, sleep, atTerminate } from "../../utils";
+import { env, createLogger, LogLevel, sleep, atTerminate } from "../../utils";
 
 async function main() {
 
@@ -7,7 +7,7 @@ async function main() {
   process.stdout.setEncoding("utf8");
 
   const jobName = path.basename(__dirname);
-  const log = getLogger(jobName, LogLevel.info);
+  const log = createLogger(jobName, LogLevel.info);
   atTerminate(() => { log.info("job terminated"); });
 
   env.print(log);

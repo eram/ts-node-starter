@@ -2,7 +2,7 @@ import * as Koa from "koa";
 import joiRouter from "koa-joi-router";
 import { Sequelize } from "sequelize";
 import Joi from "joi";
-import { env, IDictionary, ROJO } from "../utils";
+import { env, IDictionary, POJO, ROJO } from "../utils";
 import { apm } from "../utils/apm";
 import { Bridge } from "../libs/cluster";
 
@@ -13,6 +13,15 @@ const meta = {
     tags: ["healthcheck"],
   },
 };
+
+export interface IHealthcheckBody extends POJO {
+  ok: boolean;
+  app: string;
+  releaseId: string;
+  user?: string;
+  timestamp?: string;
+  error?: string;
+}
 
 type JoiV = IDictionary<Joi.SchemaLike>;
 
@@ -43,46 +52,8 @@ async function handler(ctx: Koa.Context2, _next: Koa.Next) {
   let skipPing = false;
 
   ctx.body = ctx.body || {};
-
-  // make sure we can talk to database
-  try {
-    const rc = await db.query("SELECT strftime('%Y-%m-%dT%H:%M:%fZ', 'now') timestamp") as ROJO;
-    ctx.body.timestamp = rc[0][0].timestamp; // 2013-10-07T08:23:19.120Z
-  } catch (e) {
-    err = e;
-  }
-
-  // get apm from this process or cluster
-  if (typeof ctx.query?.apm !== "undefined") {
-    if (ctx.query.apm === "true") {
-      const resp = await client.send("apm");
-      if (resp.error) {
-        err = new Error(resp.error);
-      }
-      ctx.body.apm = resp.apm;
-      skipPing = true;
-    } else {
-      ctx.body.apm = apm.getAll();
-    }
-  }
-
-  // make sure we can talk to cluster
-  if (!skipPing) {
-    const resp = await client.send("ping");
-    if (resp.error) {
-      err = new Error(resp.error);
-    }
-  }
-
-  // response
-  ctx.status = 200;
-  ctx.set("Cache-Control", "no-cache");
-  ctx.type = "json";
-  ctx.body = {
-    ...ctx.body,
-
-    ok: (!err),
-
+  const body: IHealthcheckBody = {
+    ok: true,
     app: process.env.APP_NAME,
     releaseId: env.releaseId,
     workerId: env.workerId,
@@ -90,13 +61,51 @@ async function handler(ctx: Koa.Context2, _next: Koa.Next) {
     heap: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`,
   };
 
-  if (err) {
-    ctx.body.error = err.message;
+  try {
+
+    // make sure we can talk to database
+    const rc = await db.query("SELECT strftime('%Y-%m-%dT%H:%M:%fZ', 'now') timestamp") as ROJO;
+    body.timestamp = rc[0][0].timestamp; // "2013-10-07T08:23:19.120Z"
+
+    // get apm from this process or cluster
+    if (typeof ctx.query?.apm !== "undefined") {
+      if (ctx.query.apm === "true") {
+        const resp = await client.send("apm");
+        if (resp.error) {
+          err = new Error(resp.error);
+        }
+        body.apm = resp.apm;
+        skipPing = true;
+      } else {
+        body.apm = apm.getAll();
+      }
+    }
+
+    // make sure we can talk to cluster
+    if (!skipPing) {
+      const resp = await client.send("ping");
+      if (resp.error) {
+        err = new Error(resp.error);
+      }
+    }
+
+    if (ctx.state?.user) {
+      body.user = ctx.state.user;
+    }
+  } catch (e) {
+    err = e;
   }
 
-  if (ctx.state?.user) {
-    ctx.body.user = ctx.state.user;
+  // response
+  if (err) {
+    body.ok = false;
+    body.error = err.message;
   }
+
+  ctx.status = 200;
+  ctx.set("Cache-Control", "no-cache");
+  ctx.type = "json";
+  ctx.body = body;
 }
 
 export function init(router: joiRouter.Router, db_: Sequelize, client_: Bridge) {

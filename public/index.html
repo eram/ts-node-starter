@@ -5,25 +5,28 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 	<meta name="theme-color" content="#FFFFFF" />
+	<meta	name="description"	content="Web site created using create-ts-node-starter"/>
 	<base href="/">	
-	<link rel="icon" type="image/png" href="./favicon.png" />
+	<link rel="icon" type="image/x-icon" href="/favicon.ico" />
 	<title>ts-node-starter</title>
 </head>
 
 <body>
+	<noscript>You need to enable JavaScript to run this app.</noscript>
 	<h1>ts-node-starter</h1>
 	<p>endpoints:<br />
 	<ul>
 		<li><a href="/">public site</a></li>
-		<li><a href="/_healthcheck?apm=true">healthcheck with cluster apm</a></li>
-		<li><a href="/_openapi">openapi</a></li>
-		<li><a href="/_openapi.json">openapi.json</a></li>
-		<li><a href="/sso/github/authorize">login with github oauth</a></li>
+		<li><a href="app">single page application</a></li>
+		<li><a href="_healthcheck?apm=true">healthcheck with cluster apm</a></li>
+		<li><a href="_openapi">openapi</a></li>
+		<li><a href="_openapi.json">openapi.json</a></li>
+		<li><a href="sso/github/authorize">login with github oauth</a></li>
 		<li><a id="btnRefresh" href=".">refresh token</a></li>
 		<li><a id="btnLogout" href=".">logout</a></li>
 	</ul>
 	</p>
-	<p><div>status: <div id="response"></div></div></p>
-	<script src="js/index.js" type="text/javascript"></script>
+	<p><div>status: <span id="response"></span></div></p>
+	<script src="index.js" type="text/javascript"></script>
 	</body>
 </html>

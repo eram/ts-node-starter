@@ -1,5 +1,5 @@
 /* eslint-disable sonarjs/no-duplicate-string */
-import createError from "http-errors";
+import createHttpError from "http-errors";
 import {
   DatabaseError,
   SequelizeScopeError,
@@ -26,7 +26,7 @@ describe("errorHandler middleware tests", () => {
       status: 0,
     };
 
-    await errorHandler(ctx as Koa.Context2, async () => Promise.reject(new createError.BadRequest()));
+    await errorHandler(ctx as Koa.Context2, async () => Promise.reject(new createHttpError.BadRequest()));
     expect(ctx.status).toEqual(400);
     expect(ctx.body).toBeTruthy();
     expect(ctx.body.error).toEqual("Bad Request");
@@ -163,7 +163,7 @@ describe("errorHandler middleware tests", () => {
     };
 
     await errorHandler(ctx as Koa.Context2, () => {
-      throw createError(503, "test");
+      throw createHttpError(503, "test");
     });
 
     expect(ctx.status).toEqual(503);
@@ -181,7 +181,7 @@ describe("errorHandler middleware tests", () => {
       href: "http://test",
     };
 
-    koaOnError(createError(503, "test"), ctx as Koa.Context2);
+    koaOnError(createHttpError(503, "test"), ctx as Koa.Context2);
   });
 
   test("counters are updated", async () => {
@@ -236,5 +236,23 @@ describe("errorHandler middleware tests", () => {
 
     expect(setFn).toHaveBeenCalledTimes(1);
     setWarnRespTime(save);
+  });
+
+  test("ctx.assert with number creates HttpError", async () => {
+    const ctx: Partial<Koa.Context2> = {
+      state: {},
+      status: 0,
+      body: {},
+      href: "test",
+      assert: require("http-assert"),   // eslint-disable-line
+    };
+
+    await errorHandler(ctx as Koa.Context2, async () => {
+      ctx.assert(false, 401, "test assert 401");
+      return sleep(0);
+    });
+
+    expect(ctx.status).toEqual(401);
+    expect(ctx.message).toEqual("test assert 401");
   });
 });

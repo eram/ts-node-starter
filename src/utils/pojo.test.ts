@@ -1,4 +1,38 @@
-import { POJO, ROJO } from "./pojo";
+import { POJO, ROJO, Union } from "./pojo";
+
+describe("type tests", () => {
+  test("union keys", () => {
+
+    type Box = {
+      color: string,
+      height: number,
+      width: number,
+    };
+
+    type Polygon = {
+      color: string
+      height: number
+      width: number
+      sides: number
+    };
+
+    // type
+    type Both = Union<Box | Polygon>;
+
+    function setProp<T extends keyof Both>(me: Both, prop: T, value: Both[T]) {
+      me[prop] = value;
+    }
+
+    const both: Both = { color: "black", height: 12, width: 12, sides: 4 };
+    setProp(both, "sides", 3);  // without Union => Argument of type '"sides"' is not assignable to parameter of type '"color" | "height" | "width"'
+    expect(both.sides).toEqual(3);
+
+    both.sides = 6;
+    expect(both.sides).toEqual(6);
+
+  });
+});
+
 
 describe("pojo tests", () => {
   test("types", () => {
