@@ -1,1 +1,0 @@
-ts-node scripts/test1.ts
